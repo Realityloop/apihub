@@ -1,0 +1,83 @@
+<?php
+/**
+ * @file
+ * Core functions for the API Hub UI module.
+ */
+
+/**
+ * Include additional files.
+ */
+$dirname  = dirname(__FILE__) . '/includes';
+$includes = file_scan_directory($dirname, '/.inc$/');
+foreach (module_list() as $module) {
+  $file = "{$dirname}/{$module}.inc";
+  if (isset($includes[$file])) {
+    require_once $file;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function apihub_ui_theme() {
+  $items['apihub_ui_method_parameters'] = array(
+    'render element' => 'element',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function apihub_ui_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && !empty($plugin)) {
+    return "plugins/{$plugin}";
+  }
+}
+
+function theme_apihub_ui_method_parameters($variables) {
+  $element = $variables['element'];
+
+  $rows  = array();
+  $flip  = array('even' => 'odd', 'odd' => 'even');
+  $class = 'even';
+  foreach (element_children($element) as $delta) {
+    if (!is_numeric($delta)) {
+      continue;
+    }
+
+    $parameter = $element[$delta];
+
+    $row    = array();
+    $fields = array('name', 'id', 'type', 'options', 'required');
+    foreach ($fields as $field) {
+      $row[$field] = array('data' => render($parameter[$field]));
+    }
+
+    $rows[] = array(
+      'data'        => $row,
+      'no_striping' => TRUE,
+      'class'       => array($class),
+    );
+    $rows[] = array(
+      'data'        => array(
+        array(
+          'data'    => render($parameter['description']),
+          'colspan' => 5,
+        )
+      ),
+      'no_striping' => TRUE,
+      'class'       => array($class),
+    );
+
+    $class = $flip[$class];
+  }
+
+  $header = array(t('Name'), t('ID'), t('Type'), t('Options'), t('Required'));
+
+  return theme('table', array(
+    'header' => $header,
+    'rows'   => $rows,
+  )) . drupal_render($element['_add']);
+}

@@ -1,0 +1,11 @@
+name = API Hub UI
+description = Create and manage 3rd party APIs.
+package = API Hub
+; configure =
+core = 7.x
+
+
+
+; Dependencies
+
+dependencies[] = apihub

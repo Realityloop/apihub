@@ -1,0 +1,107 @@
+<?php
+/**
+ * @file
+ * Core functions for the API Hub module.
+ */
+
+/**
+ * Include additional files.
+ */
+$dirname  = dirname(__FILE__) . '/includes';
+$includes = file_scan_directory($dirname, '/.inc$/');
+foreach (module_list() as $module) {
+  $file = "{$dirname}/{$module}.inc";
+  if (isset($includes[$file])) {
+    require_once $file;
+  }
+}
+
+/**
+ * @param bool $reset
+ *
+ * @return mixed
+ */
+function apihub_handlers($reset = FALSE) {
+  $handlers =& drupal_static(__FUNCTION__, array());
+
+  if (empty($handlers) || $reset) {
+    $_handlers = module_invoke_all('apihub_handler_info');
+    foreach ($_handlers as $id => $handler) {
+      // Ensure class exists.
+      if (!isset($handler['class']) || !class_exists($handler['class'])) {
+        continue;
+      }
+
+      $handler['id'] = $id;
+      $handlers[$id] = $handler;
+    }
+  }
+
+  return $handlers;
+}
+
+/**
+ * @param $handler
+ *
+ * @return mixed|bool
+ */
+function apihub_handlers_load($handler) {
+  $handlers = apihub_handlers();
+
+  return isset($handlers[$handler]) ? $handlers[$handler] : FALSE;
+}
+
+/**
+ * Convert an API Hub field to a FAPI element.
+ *
+ * @param $field
+ *
+ * @return array
+ */
+function _apihub_field_to_fapi($field) {
+  $field += array(
+    'name'        => '',
+    'type'        => 'text',
+    'description' => '',
+    'required'    => FALSE,
+  );
+
+  // @TODO - Make this extensible.
+  $types = array(
+    'decimal' => 'textfield',
+    'text'    => 'textfield',
+    'user'    => 'textfield',
+  );
+
+  $element = array(
+    '#title'       => $field['name'],
+    '#type'        => isset($types[$field['type']]) ? $types[$field['type']] : 'textfield',
+    '#description' => $field['description'],
+    '#required'    => $field['required'],
+  );
+
+  // Get options from options callback.
+  if (isset($field['options callback']) && function_exists($field['options callback'])) {
+    $field['options'] = $field['options callback']();
+  }
+
+  // Build select list.
+  if (!empty($field['options'])) {
+    $options = array();
+    if (!$field['required']) {
+      $options[''] = t('- Default -');
+    }
+
+    if (is_string($field['options'])) {
+      $options += list_extract_allowed_values($field['options'], 'list_text', FALSE);
+    }
+    else {
+      $options += $field['options'];
+    }
+
+    $element['#type']    = 'select';
+    $element['#options'] = $options;
+  }
+
+  return $element;
+}
