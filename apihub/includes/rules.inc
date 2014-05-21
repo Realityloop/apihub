@@ -47,7 +47,7 @@ function apihub_rules_action_info() {
 
     $actions[$action_id] = array(
       'label'     => t('@label (@method @path)', array(
-        '@label'  => $resource->label,
+        '@label'  => $resource->admin_title,
         '@method' => $resource->method,
         '@path'   => $resource->path,
       )),
@@ -63,7 +63,7 @@ function apihub_rules_action_info() {
           'type'  => 'unknown',
         ),
       ),
-      'group'     => t('API Hub - Resources - @api', array('@api' => $apis[$resource->api]->label)),
+      'group'     => t('API Hub - Resources - @api', array('@api' => $apis[$resource->api]->admin_title)),
       'base'      => 'apihub_rules_resources_action',
     );
 

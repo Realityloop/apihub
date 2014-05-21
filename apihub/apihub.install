@@ -31,7 +31,7 @@ function apihub_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'label' => array(
+      'admin_title' => array(
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
@@ -86,7 +86,7 @@ function apihub_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'label' => array(
+      'admin_title' => array(
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,

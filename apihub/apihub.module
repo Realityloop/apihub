@@ -68,6 +68,7 @@ function _apihub_field_to_fapi($field) {
 
   // @TODO - Make this extensible.
   $types = array(
+    'boolean' => 'checkbox',
     'decimal' => 'textfield',
     'text'    => 'textfield',
     'user'    => 'textfield',

@@ -319,7 +319,7 @@ class apihub_resources_ui extends ctools_export_ui {
     array_splice($this->rows[$item->name]['data'], $delta + 1, 0, $additional_items);
 
     if (isset($this->sorts[$item->name])) {
-      $this->sorts[$item->name] = $item->label;
+      $this->sorts[$item->name] = $item->admin_title;
     }
   }
 
@@ -348,8 +348,8 @@ class apihub_resources_ui extends ctools_export_ui {
    * unless the listing mechanism is going to be highly specialized.
    */
   function list_page($js, $input) {
-    $label = apihub_resources_ui_api('label');
-    drupal_set_title(t('@label resources', array('@label' => $label)));
+    $admin_title = apihub_resources_ui_api('admin_title');
+    drupal_set_title(t('@admin_title resources', array('@admin_title' => $admin_title)));
 
     return parent::list_page($js, $input);
   }

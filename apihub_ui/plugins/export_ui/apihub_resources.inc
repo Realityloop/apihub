@@ -28,7 +28,6 @@ function apihub_ui_apihub_resources_ctools_export_ui() {
     'title plural proper'   => t('Resources'),
     'handler'               => 'apihub_resources_ui',
     'export'                => array(
-      'admin_title'       => 'label',
       'admin_description' => 'description',
     ),
   );

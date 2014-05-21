@@ -45,19 +45,11 @@ class drupal_apihub_handler extends apihub_handler {
    * @return mixed
    */
   function execute($method, $url, $params = array()) {
-    $data = '';
-    if ($method == 'GET') {
-      $params += drupal_get_query_array($this->auth);
-    }
-    else {
-      $data   = drupal_http_build_query($params);
-      $params = drupal_get_query_array($this->auth);
-    }
+    $params += drupal_get_query_array($this->auth);
     $url = url($url, array('query' => $params));
 
     $request = drupal_http_request($url, array(
       'method' => $method,
-      'data'   => $data,
     ));
 
     // Standardise data.

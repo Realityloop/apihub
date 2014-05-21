@@ -36,7 +36,6 @@ function apihub_ui_apihub_apis_ctools_export_ui() {
       ),
     ),
     'export'                => array(
-      'admin_title'       => 'label',
       'admin_description' => 'description',
     ),
   );
