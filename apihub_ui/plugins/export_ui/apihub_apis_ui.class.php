@@ -16,7 +16,7 @@ class apihub_apis_ui extends ctools_export_ui {
     $schema     = ctools_export_get_schema($this->plugin['schema']);
 
     $form['info']['url'] = array(
-      '#title'         => t('Base URL'),
+      '#title'         => t('API URL'),
       '#type'          => 'textfield',
       '#default_value' => $item->url,
     );

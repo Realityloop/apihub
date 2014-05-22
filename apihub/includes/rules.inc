@@ -39,46 +39,59 @@ function apihub_rules_action_info() {
 
   // Add actions from API Hub resources.
   module_load_include('inc', 'ctools', 'includes/export');
-  $apis      = ctools_export_crud_load_all('apihub_apis');
-  $resources = ctools_export_crud_load_all('apihub_resources');
+  $apis = ctools_export_crud_load_all('apihub_apis');
+  foreach ($apis as $api) {
+    if (!isset($api->disabled) || !$api->disabled) {
+      $resources = ctools_export_load_object('apihub_resources', 'conditions', array('api' => $api->name));
 
-  foreach ($resources as $resource) {
-    $action_id = "apihub_action_{$resource->name}";
+      foreach ($resources as $resource) {
+        $action_id = "apihub_action_{$resource->name}";
 
-    $actions[$action_id] = array(
-      'label'     => t('@label (@method @path)', array(
-        '@label'  => $resource->admin_title,
-        '@method' => $resource->method,
-        '@path'   => $resource->path,
-      )),
-      'parameter' => array(
-        'handler' => array(
-          'label' => t('Handler'),
-          'type'  => 'apihub_handler',
-        ),
-      ),
-      'provides'  => array(
-        'result' => array(
-          'label' => t('Result'),
-          'type'  => 'unknown',
-        ),
-      ),
-      'group'     => t('API Hub - Resources - @api', array('@api' => $apis[$resource->api]->admin_title)),
-      'base'      => 'apihub_rules_resources_action',
-    );
-
-    // Parameters.
-    if (!empty($resource->parameters)) {
-      foreach ($resource->parameters as $parameter) {
-        $actions[$action_id]['parameter'][$parameter['id']] = array(
-          'label'         => $parameter['name'],
-          'description'   => $parameter['description'],
-          'type'          => 'text',
-          'default value' => '',
-          'optional'      => !$parameter['required'],
+        $actions[$action_id] = array(
+          'label'     => t('@label (@method @path)', array(
+            '@label'  => $resource->admin_title,
+            '@method' => $resource->method,
+            '@path'   => $resource->path,
+          )),
+          'parameter' => array(
+            'handler' => array(
+              'label' => t('Handler'),
+              'type'  => 'apihub_handler',
+            ),
+          ),
+          'provides'  => array(
+            'result' => array(
+              'label' => t('Result'),
+              'type'  => 'unknown',
+            ),
+          ),
+          'group'     => t('API Hub - Resources - @api', array('@api' => $apis[$resource->api]->admin_title)),
+          'base'      => 'apihub_rules_resources_action',
         );
-        if (!empty($parameter['options'])) {
-          $actions[$action_id]['parameter'][$parameter['id']]['options list'] = 'apihub_rules_resources_parameter_options';
+
+        // Parameters.
+        if (!empty($resource->parameters)) {
+          foreach ($resource->parameters as $parameter) {
+            $actions[$action_id]['parameter'][$parameter['id']] = array(
+              'label'         => $parameter['name'],
+              'description'   => $parameter['description'],
+              'type'          => 'text',
+              'default value' => '',
+              'optional'      => !$parameter['required'],
+            );
+            if (!empty($parameter['options'])) {
+              $actions[$action_id]['parameter'][$parameter['id']]['options list'] = 'apihub_rules_resources_parameter_options';
+            }
+          }
+        }
+
+        // Provides.
+        if (!empty($resource->settings['rules']['provides'])) {
+          unset($actions[$action_id]['provides']['result']);
+          $actions[$action_id]['provides'][$resource->settings['rules']['provides']['id']] = array(
+            'label' => $resource->settings['rules']['provides']['name'],
+            'type' => $resource->settings['rules']['provides']['type'],
+          );
         }
       }
     }
@@ -201,7 +214,7 @@ function apihub_rules_resources_action() {
   $args = func_get_args();
 
   // Load provided API Hub resource.
-  $element = $args[count($args) - 2];
+  $element  = $args[count($args) - 2];
   $resource = ctools_export_crud_load('apihub_resources', substr($element->getElementName(), 14));
 
   if ($resource) {
@@ -219,9 +232,16 @@ function apihub_rules_resources_action() {
     $request = new apihub_request($resource->api, $handler['handler'], $handler['settings']);
     $result  = $request->execute($resource->method, $resource->path, $parameters);
 
-    return array(
+    // Return resulting data.
+    $return = array(
       'result' => $result,
     );
+
+    if (!empty($resource->settings['rules']['provides']) && isset($result->{$resource->settings['rules']['provides']['id']})) {
+      $return[$resource->settings['rules']['provides']['id']] = $result->{$resource->settings['rules']['provides']['id']};
+    }
+
+    return $return;
   }
 
   return FALSE;

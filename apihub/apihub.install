@@ -49,12 +49,6 @@ function apihub_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'handler' => array(
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => TRUE,
-        'default' => '',
-      ),
     ),
     'primary key' => array('name'),
   );
@@ -111,6 +105,10 @@ function apihub_schema() {
         'default' => '',
       ),
       'parameters' => array(
+        'type' => 'blob',
+        'serialize' => TRUE,
+      ),
+      'settings' => array(
         'type' => 'blob',
         'serialize' => TRUE,
       ),

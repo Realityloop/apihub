@@ -1,7 +1,7 @@
 name = API Hub UI
 description = Create and manage 3rd party APIs.
 package = API Hub
-; configure =
+configure = admin/structure/apihub
 core = 7.x
 
 

@@ -1,7 +1,6 @@
 name = API Hub
 description = 3rd party API engine.
 package = API Hub
-; configure =
 core = 7.x
 
 

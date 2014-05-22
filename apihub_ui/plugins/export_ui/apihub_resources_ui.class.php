@@ -12,7 +12,7 @@ class apihub_resources_ui extends ctools_export_ui {
     $allowed_operations = parent::build_operations($item);
 
     foreach ($allowed_operations as &$operation) {
-      $operation['href'] = str_replace('%', arg(3), $operation['href']);
+      $operation['href'] = str_replace('%', arg(4), $operation['href']);
     }
 
     return $allowed_operations;
@@ -31,7 +31,7 @@ class apihub_resources_ui extends ctools_export_ui {
     $schema     = ctools_export_get_schema($this->plugin['schema']);
 
     if (empty($form_state['values'])) {
-      $api = ctools_export_crud_load('apihub_apis', arg(3));
+      $api = ctools_export_crud_load('apihub_apis', arg(4));
     }
     else {
       $api = ctools_export_crud_load('apihub_apis', $form_state['values']['api']);
@@ -82,7 +82,7 @@ class apihub_resources_ui extends ctools_export_ui {
       '#title'       => t('Parameters'),
       '#tree'        => TRUE,
       '#collapsible' => TRUE,
-//      '#collapsed'   => $form_state['op'] === 'edit',
+      '#collapsed'   => $form_state['op'] === 'edit',
       '#theme'       => 'apihub_ui_method_parameters',
       '#prefix'      => '<div id="parameters-wrapper">',
       '#suffix'      => '</div>',
@@ -159,96 +159,20 @@ class apihub_resources_ui extends ctools_export_ui {
       ),
     );
 
-    // Test.
-    $form['test'] = array(
-      '#type'        => 'fieldset',
-      '#title'       => t('Test'),
-      '#tree'        => TRUE,
-      '#collapsible' => TRUE,
-      '#collapsed'   => TRUE,
-    );
+    // Advanced settings.
+    $settings = module_invoke_all('apihub_resources_settings', $item->settings);
+    drupal_alter('apihub_resources_settings', $settings, $item->settings);
+    if (!empty($settings) && is_array($settings)) {
+      $form['settings'] = array(
+        '#type'        => 'fieldset',
+        '#title'       => t('Advanced settings'),
+        '#tree'        => TRUE,
+        '#collapsible' => TRUE,
+        '#collapsed'   => TRUE,
+      );
 
-    // Handler.
-    $handler_cid   = "apihub:{$item->api}:handler:{$user->uid}";
-    $handler_cache = cache_get($handler_cid);
-
-    $form['test']['handler'] = array(
-      '#type'    => 'select',
-      '#title'   => t('Handler'),
-      '#options' => apihub_ui_resources_handlers(),
-      '#ajax'    => array(
-        'callback' => 'apihub_ui_resources_form_js_test_handler_settings',
-        'wrapper'  => 'test-handler-settings-output',
-      ),
-    );
-
-    $form['test']['handler_settings'] = array(
-      '#type'        => 'fieldset',
-      '#title'       => t('Handler settings'),
-      '#collapsible' => TRUE,
-      '#prefix'      => '<div id="test-handler-settings-output">',
-      '#suffix'      => '</div>',
-    );
-
-    // Determine which handler is currently in use.
-    $handler = key($form['test']['handler']['#options']);
-    if (isset($handler_cache->data['handler']) && in_array($handler_cache->data['handler'], array_keys($form['test']['handler']['#options']))) {
-      $handler                                   = $handler_cache->data['handler'];
-      $form['test']['handler']['#default_value'] = $form['test']['handler'];
+      $form['settings'] += $settings;
     }
-
-    $handler = apihub_handlers_load($handler);
-    if ($handler && isset($handler['settings']) && !empty($handler['settings'])) {
-      foreach ($handler['settings'] as $id => $setting) {
-        $form['test']['handler_settings'][$id] = _apihub_field_to_fapi($setting);
-        if (isset($handler_cache->data['settings'][$id])) {
-          $form['test']['handler_settings'][$id]['#default_value'] = $handler_cache->data['settings'][$id];
-        }
-      }
-    }
-
-    // Input.
-    $input_cid   = "apihub:{$item->api}:input:{$item->name}:{$user->uid}";
-    $input_cache = cache_get($input_cid);
-
-    $form['test']['input'] = array(
-      '#type'        => 'fieldset',
-      '#title'       => t('Input'),
-      '#collapsible' => TRUE,
-    );
-
-    foreach ($item->parameters as $parameter) {
-      if (empty($parameter)) {
-        continue;
-      }
-
-      $form['test']['input'][$parameter['id']] = _apihub_field_to_fapi($parameter);
-      if (isset($input_cache->data[$parameter['id']])) {
-        $form['test']['input'][$parameter['id']]['#default_value'] = $input_cache->data[$parameter['id']];
-      }
-    }
-    $inputs = element_children($form['test']['input']);
-    if (empty($inputs)) {
-      unset($form['test']['input']);
-    }
-
-    // Output.
-    $form['test']['output'] = array(
-      '#type'   => 'item',
-      '#title'  => t('Output'),
-      '#markup' => t('No data'),
-      '#prefix' => '<div id="test-output-wrapper">',
-      '#suffix' => '</div>',
-    );
-
-    $form['test']['submit'] = array(
-      '#type'  => 'button',
-      '#value' => $item->method,
-      '#ajax'  => array(
-        'callback' => 'apihub_ui_resources_form_js_test_output',
-        'wrapper'  => 'test-output-wrapper',
-      ),
-    );
   }
 
   /**
@@ -334,7 +258,7 @@ class apihub_resources_ui extends ctools_export_ui {
    *   TRUE if the item should be excluded.
    */
   function list_filter($form_state, $item) {
-    if ($item->api != arg(3)) {
+    if ($item->api != arg(4)) {
       return TRUE;
     }
 
@@ -405,9 +329,42 @@ class apihub_resources_ui extends ctools_export_ui {
     parent::redirect($op, $item);
   }
 
+
+  /**
+   *
+   */
+  function test_page($js, $input, $item, $step = NULL) {
+    drupal_set_title($this->get_page_title('test', $item));
+
+    $form_state = array(
+      'plugin'        => $this->plugin,
+      'object'        => &$this,
+      'ajax'          => $js,
+      'item'          => $item,
+      'op'            => 'test',
+      'form type'     => 'test',
+      'rerender'      => TRUE,
+      'no_redirect'   => TRUE,
+      'step'          => $step,
+      // Store these in case additional args are needed.
+      'function args' => func_get_args(),
+    );
+
+    $output = drupal_build_form('apihub_ui_resources_form_test', $form_state);
+    //    if (!empty($form_state['executed'])) {
+    //      $this->delete_form_submit($form_state);
+    //      $this->redirect($form_state['op'], $item);
+    //    }
+
+    return $output;
+  }
+
+
 }
 
 /**
+ * Edit form parameter add AJAX callback.
+ *
  * @param $form
  * @param $form_state
  *
@@ -420,6 +377,107 @@ function apihub_ui_resources_form_js_add($form, $form_state) {
 }
 
 /**
+ * Test form callback.
+ *
+ * @param $form
+ * @param $form_state
+ *
+ * @return mixed
+ */
+function apihub_ui_resources_form_test($form, $form_state) {
+  global $user;
+  $item = $form_state['item'];
+
+  // Handler.
+  $handler_cid   = "apihub:{$item->api}:handler:{$user->uid}";
+  $handler_cache = cache_get($handler_cid);
+
+  $form['handler'] = array(
+    '#type'    => 'select',
+    '#title'   => t('Handler'),
+    '#options' => apihub_ui_resources_handlers(),
+    '#ajax'    => array(
+      'callback' => 'apihub_ui_resources_form_js_test_handler_settings',
+      'wrapper'  => 'test-handler-settings-output',
+    ),
+  );
+
+  $form['handler_settings'] = array(
+    '#type'        => 'fieldset',
+    '#title'       => t('Handler settings'),
+    '#tree'        => TRUE,
+    '#collapsible' => TRUE,
+    '#prefix'      => '<div id="test-handler-settings-output">',
+    '#suffix'      => '</div>',
+  );
+
+  // Determine which handler is currently in use.
+  $handler = key($form['handler']['#options']);
+  if (isset($handler_cache->data['handler']) && in_array($handler_cache->data['handler'], array_keys($form['handler']['#options']))) {
+    $handler                           = $handler_cache->data['handler'];
+    $form['handler']['#default_value'] = $form['handler'];
+  }
+
+  $handler = apihub_handlers_load($handler);
+  if ($handler && isset($handler['settings']) && !empty($handler['settings'])) {
+    foreach ($handler['settings'] as $id => $setting) {
+      $form['handler_settings'][$id] = _apihub_field_to_fapi($setting);
+      if (isset($handler_cache->data['settings'][$id])) {
+        $form['handler_settings'][$id]['#default_value'] = $handler_cache->data['settings'][$id];
+      }
+    }
+  }
+
+  // Input.
+  $input_cid   = "apihub:{$item->api}:input:{$item->name}:{$user->uid}";
+  $input_cache = cache_get($input_cid);
+
+  $form['input'] = array(
+    '#type'        => 'fieldset',
+    '#title'       => t('Input'),
+    '#tree'        => TRUE,
+    '#collapsible' => TRUE,
+  );
+
+  foreach ($item->parameters as $parameter) {
+    if (empty($parameter)) {
+      continue;
+    }
+
+    $form['input'][$parameter['id']] = _apihub_field_to_fapi($parameter);
+    if (isset($input_cache->data[$parameter['id']])) {
+      $form['input'][$parameter['id']]['#default_value'] = $input_cache->data[$parameter['id']];
+    }
+  }
+  $inputs = element_children($form['input']);
+  if (empty($inputs)) {
+    unset($form['input']);
+  }
+
+  // Output.
+  $form['output'] = array(
+    '#type'   => 'item',
+    '#title'  => t('Output'),
+    '#markup' => t('No data'),
+    '#prefix' => '<div id="test-output-wrapper">',
+    '#suffix' => '</div>',
+  );
+
+  $form['submit'] = array(
+    '#type'  => 'button',
+    '#value' => $item->method,
+    '#ajax'  => array(
+      'callback' => 'apihub_ui_resources_form_js_test_output',
+      'wrapper'  => 'test-output-wrapper',
+    ),
+  );
+
+  return $form;
+}
+
+/**
+ * Test form handler settings AJAX callback.
+ *
  * @param $form
  * @param $form_state
  *
@@ -428,10 +486,12 @@ function apihub_ui_resources_form_js_add($form, $form_state) {
 function apihub_ui_resources_form_js_test_handler_settings($form, $form_state) {
   drupal_get_messages();
 
-  return $form['test']['handler_settings'];
+  return $form['handler_settings'];
 }
 
 /**
+ * Test form output AJAX callback.
+ *
  * @param $form
  * @param $form_state
  *
@@ -441,7 +501,7 @@ function apihub_ui_resources_form_js_test_output($form, $form_state) {
   global $user;
 
   $resource = $form_state['item'];
-  $values   = $form_state['values']['test'];
+  $values   = $form_state['values'];
 
   // Store handler settings for this resource's api and current user.
   $handler_cid = "apihub:{$resource->api}:handler:{$user->uid}";
@@ -454,26 +514,26 @@ function apihub_ui_resources_form_js_test_output($form, $form_state) {
   $input_cid = "apihub:{$resource->api}:input:{$resource->name}:{$user->uid}";
   cache_set($input_cid, $values['input']);
 
-  // Process request.
-  $params = array_filter($form_state['values']['test']['input']);
-  $params = is_null($params) ? array() : $params;
-
-  $request = new apihub_request($resource->api, $form_state['values']['test']['handler'], $form_state['values']['test']['handler_settings']);
-  $result  = $request->execute($resource->method, $resource->path, $params);
-
-  if (module_exists('devel')) {
-    $form['test']['output']['#markup'] = kprint_r($result, TRUE);
-  }
-  else {
-    $form['test']['output']['#markup'] = '<pre>' . print_r($result, TRUE) . '</pre>';
-  }
-
+  // Clear messages.
   drupal_get_messages();
 
-  return $form['test']['output'];
+  // Process request.
+  $request = new apihub_request($resource->api, $values['handler'], $values['handler_settings']);
+  $result  = $request->execute($resource->method, $resource->path, $form_state['values']['input']);
+
+  if (module_exists('devel')) {
+    $form['output']['#markup'] = kprint_r($result, TRUE);
+  }
+  else {
+    $form['output']['#markup'] = '<pre>' . print_r($result, TRUE) . '</pre>';
+  }
+
+  return $form['output'];
 }
 
 /**
+ * API Hub handlers to options array.
+ *
  * @return array
  */
 function apihub_ui_resources_handlers() {
@@ -488,12 +548,14 @@ function apihub_ui_resources_handlers() {
 }
 
 /**
+ * Get resource API or API attribute.
+ *
  * @param null $attribute
  *
  * @return bool
  */
 function apihub_resources_ui_api($attribute = NULL) {
-  $api = ctools_export_crud_load('apihub_apis', arg(3));
+  $api = ctools_export_crud_load('apihub_apis', arg(4));
 
   if (!is_null($attribute)) {
     return isset($api->{$attribute}) ? $api->{$attribute} : FALSE;

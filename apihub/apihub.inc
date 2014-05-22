@@ -34,6 +34,11 @@ class apihub_request {
     $resource = ctools_export_crud_load('apihub_resources', $id);
     $url      = $this->api->url . $resource->path;
 
+    // Cleanup parameters.
+    // @TODO - Ensure required parameters are provided and not empty.
+    $params = array_filter($params);
+    $params = is_null($params) ? array() : $params;
+
     // Substitute parameters in URL.
     foreach ($params as $key => $value) {
       foreach (array(":{$key}", "[{$key}]") as $needle) {
