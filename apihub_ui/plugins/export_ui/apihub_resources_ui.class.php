@@ -390,7 +390,7 @@ function apihub_ui_resources_form_test($form, $form_state) {
 
   // Handler.
   $handler_cid   = "apihub:{$item->api}:handler:{$user->uid}";
-  $handler_cache = cache_get($handler_cid);
+  $handler_cache = cache_get($handler_cid, 'cache_apihub');
 
   $form['handler'] = array(
     '#type'    => 'select',
@@ -430,7 +430,7 @@ function apihub_ui_resources_form_test($form, $form_state) {
 
   // Input.
   $input_cid   = "apihub:{$item->api}:input:{$item->name}:{$user->uid}";
-  $input_cache = cache_get($input_cid);
+  $input_cache = cache_get($input_cid, 'cache_apihub');
 
   $form['input'] = array(
     '#type'        => 'fieldset',
@@ -508,11 +508,11 @@ function apihub_ui_resources_form_js_test_output($form, $form_state) {
   cache_set($handler_cid, array(
     'handler'  => $values['handler'],
     'settings' => $values['handler_settings']
-  ));
+  ), 'cache_apihub');
 
   // Store input values for this resource and current user.
   $input_cid = "apihub:{$resource->api}:input:{$resource->name}:{$user->uid}";
-  cache_set($input_cid, $values['input']);
+  cache_set($input_cid, $values['input'], 'cache_apihub');
 
   // Clear messages.
   drupal_get_messages();

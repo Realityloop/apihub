@@ -10,6 +10,9 @@
 function apihub_schema() {
   $schema = array();
 
+  $schema['cache_apihub'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_apihub']['description'] = 'Cache table for API Hub.';
+
   $schema['apihub_apis'] = array(
     'export' => array(
       'key' => 'name',
