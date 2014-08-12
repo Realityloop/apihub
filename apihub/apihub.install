@@ -40,7 +40,7 @@ function apihub_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'description' => array(
+      'admin_description' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => FALSE,
@@ -89,7 +89,7 @@ function apihub_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'description' => array(
+      'admin_description' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => FALSE,
@@ -108,6 +108,10 @@ function apihub_schema() {
         'default' => '',
       ),
       'parameters' => array(
+        'type' => 'blob',
+        'serialize' => TRUE,
+      ),
+      'results' => array(
         'type' => 'blob',
         'serialize' => TRUE,
       ),

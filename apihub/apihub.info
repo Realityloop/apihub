@@ -14,3 +14,9 @@ dependencies[] = ctools
 ; Files
 
 files[] = apihub.inc
+
+
+
+; Files - Views integration
+
+files[] = includes/views/apihub_views_plugin_query.inc

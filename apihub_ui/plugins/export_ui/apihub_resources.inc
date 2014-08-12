@@ -26,6 +26,15 @@ function apihub_ui_apihub_resources_ctools_export_ui() {
       'menu description'     => 'Administer 3rd party API Resources.',
 
       'items'                => array(
+        'field'              => array(
+          'path'             => 'list/%ctools_export_ui/field',
+          'title'            => 'Test',
+          'page callback'    => 'ctools_export_ui_switcher_page',
+          'page arguments'   => array('apihub_resources', 'field', 7, 9, 10),
+          'load arguments'   => array('apihub_resources'),
+          'access callback'  => TRUE,
+          'type'             => MENU_CALLBACK,
+        ),
         'list callback'      => array(
           'title'            => 'Resources',
           'type'             => MENU_LOCAL_TASK,
@@ -66,10 +75,5 @@ function apihub_ui_apihub_resources_ctools_export_ui() {
     'title singular proper'  => t('Resource'),
     'title plural'           => t('resources'),
     'title plural proper'    => t('Resources'),
-
-    // Export.
-    'export'                 => array(
-      'admin_description'    => 'description',
-    ),
   );
 }

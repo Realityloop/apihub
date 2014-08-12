@@ -3,7 +3,7 @@
 /**
  * Class apihub_resources_ui
  */
-class apihub_resources_ui extends ctools_export_ui {
+class apihub_resources_ui extends apihub_ui {
 
   /**
    * Builds the operation links for a specific exportable item.
@@ -19,6 +19,19 @@ class apihub_resources_ui extends ctools_export_ui {
   }
 
   /**
+   * Deletes exportable items from the database.
+   */
+  function delete_form_submit(&$form_state) {
+    $item = $form_state['item'];
+
+    // Clear CTools object cache.
+    ctools_include('object-cache');
+    ctools_object_cache_clear('apihub_ui_resources', $item->name);
+
+    parent::delete_form_submit($form_state);
+  }
+
+  /**
    * Provide the actual editing form.
    */
   function edit_form(&$form, &$form_state) {
@@ -30,6 +43,29 @@ class apihub_resources_ui extends ctools_export_ui {
     $item       = $form_state['item'];
     $schema     = ctools_export_get_schema($this->plugin['schema']);
 
+    // Adjust plugin menu prefix.
+    $form_state['plugin']['menu']['menu prefix'] = str_replace('%', $item->api, $form_state['plugin']['menu']['menu prefix']);
+
+    // Include the CTools tools that we need.
+    ctools_include('ajax');
+    ctools_include('object-cache');
+    ctools_include('modal');
+
+    // Set the object into CTools object cache.
+    $cache = ctools_object_cache_get('apihub_ui_resources', $item->name);
+    if ($cache) {
+      $item = $cache;
+    }
+    else {
+      ctools_object_cache_set('apihub_ui_resources', $item->name, $item);
+    }
+
+    // Ensure form is cacheable for custom ajax.
+    $form_state['cache'] = TRUE;
+
+    // Add CTools' javascript to the page.
+    ctools_modal_add_js();
+
     if (empty($form_state['values'])) {
       $api = ctools_export_crud_load('apihub_apis', arg(4));
     }
@@ -40,6 +76,9 @@ class apihub_resources_ui extends ctools_export_ui {
     if ($form_state['op'] !== 'edit') {
       unset($form['info'][$export_key]);
     }
+
+    // Hide machine name.
+    $form['info']['name']['#type'] = 'value';
 
     // Set API name.
     $form['info']['api'] = array(
@@ -75,104 +114,119 @@ class apihub_resources_ui extends ctools_export_ui {
     );
 
     // Parameters.
-    // @TODO - Toggle edit mode/summary mode.
-    // @TODO - Make this drag'n'drop sortable.
-    $form['parameters'] = array(
-      '#type'        => 'fieldset',
-      '#title'       => t('Parameters'),
-      '#tree'        => TRUE,
-      '#collapsible' => TRUE,
-      '#collapsed'   => $form_state['op'] === 'edit',
-      '#theme'       => 'apihub_ui_method_parameters',
-      '#prefix'      => '<div id="parameters-wrapper">',
-      '#suffix'      => '</div>',
-    );
+    $form['parameters'] = $this->edit_form_fields($item, 'parameters', t('Parameters'));
 
-    if (is_null($item->parameters)) {
-      $item->parameters = array();
-    }
-    if (!empty($form_state['clicked_button']) && $form_state['clicked_button']['#value'] == t('Add another')) {
-      $item->parameters[] = array();
-    }
-    foreach ($item->parameters as $delta => $parameter) {
-      $form['parameters'][$delta]['name'] = array(
-        '#type'          => 'textfield',
-        '#title'         => t('Name'),
-        '#title_display' => 'invisible',
-        '#size'          => 32,
-        '#default_value' => isset($parameter['name']) ? $parameter['name'] : '',
-      );
-
-      $form['parameters'][$delta]['id'] = array(
-        '#type'          => 'textfield',
-        '#title'         => t('ID'),
-        '#title_display' => 'invisible',
-        '#size'          => 16,
-        '#default_value' => isset($parameter['id']) ? $parameter['id'] : '',
-      );
-
-      $form['parameters'][$delta]['type'] = array(
-        '#type'          => 'select',
-        '#title'         => t('Type'),
-        '#title_display' => 'invisible',
-        '#options'       => array(
-          'text'    => t('Text'),
-          'boolean' => t('Boolean'),
-          'decimal' => t('Number'),
-        ),
-        '#default_value' => isset($parameter['type']) ? $parameter['type'] : '',
-      );
-
-      $form['parameters'][$delta]['options'] = array(
-        '#type'          => 'textarea',
-        '#title'         => t('Available options'),
-        '#title_display' => 'invisible',
-        '#rows'          => 3,
-        '#default_value' => isset($parameter['options']) ? $parameter['options'] : '',
-        '#states'        => array(
-          'visible' => array(
-            ":input[name='parameters[{$delta}][type]']" => array('value' => 'text'),
-          ),
-        ),
-      );
-
-      $form['parameters'][$delta]['required'] = array(
-        '#type'          => 'checkbox',
-        '#title'         => t('Required'),
-        '#title_display' => 'invisible',
-        '#default_value' => isset($parameter['required']) ? $parameter['required'] : FALSE,
-      );
-
-      $form['parameters'][$delta]['description'] = array(
-        '#type'          => 'textarea',
-        '#title'         => t('Description'),
-        '#rows'          => 2,
-        '#default_value' => isset($parameter['description']) ? $parameter['description'] : '',
-      );
-    }
-    $form['parameters']['_add'] = array(
-      '#type'  => 'button',
-      '#value' => t('Add another'),
-      '#ajax'  => array(
-        'callback' => 'apihub_ui_resources_form_js_add',
-        'wrapper'  => 'parameters-wrapper',
-      ),
-    );
+    // Results.
+    $form['results'] = $this->edit_form_fields($item, 'results', t('Results'));
 
     // Advanced settings.
-    $settings = module_invoke_all('apihub_resources_settings', $item->settings);
-    drupal_alter('apihub_resources_settings', $settings, $item->settings);
-    if (!empty($settings) && is_array($settings)) {
-      $form['settings'] = array(
-        '#type'        => 'fieldset',
-        '#title'       => t('Advanced settings'),
-        '#tree'        => TRUE,
-        '#collapsible' => TRUE,
-        '#collapsed'   => TRUE,
+    $form['settings'] = array(
+      '#type'        => 'container',
+      '#title'       => t('Advanced settings'),
+      '#tree'        => TRUE,
+      '#collapsible' => TRUE,
+      '#collapsed'   => TRUE,
+    );
+
+    if (!empty($item->settings)) {
+      foreach ($item->settings as $module => $settings) {
+        if (!module_exists($module)) {
+          $form['settings'][$module] = array(
+            '#type'  => 'value',
+            '#value' => $settings,
+          );
+        }
+      }
+    }
+
+    $settings = FALSE;
+    foreach (module_implements('apihub_resources_settings') as $module) {
+      $settings                  = TRUE;
+      $form['settings'][$module] = module_invoke($module, 'apihub_resources_settings', $item->settings, $item);
+    }
+
+    if ($settings) {
+      $form['settings']['#type'] = 'fieldset';
+    }
+  }
+
+  /**
+   * @param $item
+   * @param $type
+   * @param $title
+   *
+   * @return array
+   */
+  function edit_form_fields($item, $type, $title) {
+    // @TODO - Toggle edit mode/summary mode.
+    $element = array(
+      '#type'   => 'fieldset',
+      '#title'  => $title,
+      '#tree'   => TRUE,
+      '#theme'  => 'apihub_ui_resources_edit_form_fields',
+      '#prefix' => "<div id='{$type}-wrapper''>",
+      '#suffix' => '</div>',
+    );
+
+    // Ensure fields are in the form of an array.
+    if (!isset($item->{$type}) || is_null($item->{$type})) {
+      $item->{$type} = array();
+    }
+
+    foreach ($item->{$type} as $id => $field) {
+      foreach ($field as $name => $value) {
+        $element[$id][$name] = array(
+          '#type'  => 'value',
+          '#value' => $value,
+        );
+      }
+
+      $element[$id]['id'] = array(
+        '#type'          => 'hidden',
+        '#default_value' => $field['id'],
       );
 
-      $form['settings'] += $settings;
+      $element[$id]['pid'] = array(
+        '#type'          => 'hidden',
+        '#default_value' => $field['pid'],
+      );
+
+      $element[$id]['weight'] = array(
+        '#type'          => 'weight',
+        '#title'         => t('Weight'),
+        '#title_display' => 'invisible',
+        '#default_value' => $field['weight'],
+        '#delta'         => 10,
+      );
+
+      $element[$id]['_edit_url'] = array(
+        '#type'       => 'hidden',
+        '#attributes' => array('class' => array("{$type}-{$id}-edit-button-url")),
+        '#value'      => url("admin/structure/apihub/list/{$item->api}/resources/list/{$item->name}/field/{$type}/{$id}"),
+      );
+
+      $element[$id]['_edit'] = array(
+        '#type'       => 'button',
+        '#value'      => t('Edit'),
+        '#attributes' => array('class' => array('ctools-use-modal')),
+        '#id'         => "{$type}-{$id}-edit-button",
+      );
     }
+
+    $element['_url'] = array(
+      '#type'       => 'hidden',
+      '#attributes' => array('class' => array("{$type}-add-button-url")),
+      '#value'      => url("admin/structure/apihub/list/{$item->api}/resources/list/{$item->name}/field/{$type}"),
+    );
+
+    $element['_add'] = array(
+      '#type'       => 'button',
+      '#value'      => t('Add another @type', array('@type' => drupal_substr($type, 0, -1))),
+      '#attributes' => array('class' => array('ctools-use-modal')),
+      '#id'         => "{$type}-add-button",
+    );
+
+    return $element;
   }
 
   /**
@@ -181,19 +235,127 @@ class apihub_resources_ui extends ctools_export_ui {
   function edit_form_validate(&$form, &$form_state) {
     parent::edit_form_validate($form, $form_state);
 
-    unset($form_state['values']['parameters']['_add']);
-    foreach ($form_state['values']['parameters'] as $delta => $parameter) {
-      // Ensure only populated data is saved.
-      if (empty($parameter['id'])) {
-        unset($form_state['values']['parameters'][$delta]);
+    // Sanitize data.
+    foreach (array('parameters', 'results') as $type) {
+      // Sort fields by $_POST order.
+      $order                       = array_flip(array_keys($form_state['input'][$type]));
+      $form_state['values'][$type] = array_merge($order, $form_state['values'][$type]);
+      $form_state['item']->$type   = array_merge($order, $form_state['item']->$type);
+
+      // Remove fields begining with an underscore ('_').
+      foreach (array_keys($form_state['values'][$type]) as $field_id) {
+        if (strpos($field_id, '_') === 0) {
+          unset($form_state['values'][$type][$field_id]);
+          continue;
+        }
+        foreach (array_keys($form_state['values'][$type][$field_id]) as $param) {
+          if (strpos($param, '_') === 0) {
+            unset($form_state['values'][$type][$field_id][$param]);
+          }
+        }
       }
     }
 
+    $export_key = $this->plugin['export']['key'];
+    // Build the export key.
     if ($form_state['op'] != 'edit') {
-      // Build the export key.
-      $export_key                        = $this->plugin['export']['key'];
-      $form_state['item']->{$export_key} = md5("{$form_state['values']['api']}::{$form_state['values']['method']}::{$form_state['values']['path']}");
+      $form_state['values'][$export_key] = md5("{$form_state['values']['api']}::{$form_state['values']['method']}::{$form_state['values']['path']}");
     }
+
+    // Clear CTools object cache.
+    ctools_include('object-cache');
+    ctools_object_cache_clear('apihub_ui_resources', $form_state['values'][$export_key]);
+  }
+
+  /**
+   * @param $js
+   * @param $input
+   * @param $item
+   * @param $type
+   *
+   * @return array|mixed
+   */
+  function field_page($js, $input, $item, $type, $id) {
+    // Fall back if $js is not set.
+    if (!$js) {
+      return drupal_get_form('apihub_ui_resources_field_form');
+    }
+
+    ctools_include('ajax');
+    ctools_include('modal');
+    ctools_include('object-cache');
+
+    $cache = ctools_object_cache_get('apihub_ui_resources', $item->name);
+    if ($cache) {
+      $item = $cache;
+    }
+
+    $title = t('Add another @type', array('@type' => drupal_substr($type, 0, -1)));
+    if (!empty($id)) {
+      $title = t('Edit @type "@id"', array(
+        '@type' => drupal_substr($type, 0, -1),
+        '@id'   => $id,
+      ));
+    }
+
+    $form_state = array(
+      'title'         => $title,
+      'ajax'          => TRUE,
+      'form_build_id' => $input['form_build_id'],
+    );
+    $output     = ctools_modal_form_wrapper('apihub_ui_resources_field_form', $form_state);
+    if (!empty($form_state['executed'])) {
+      $id = substr($type, 0, 1) . count($item->{$type});
+
+      // Remove old entry.
+      if (isset($item->{$type}[$form_state['values']['id']])) {
+        $id = $form_state['values']['id'];
+        unset($item->{$type}[$id]);
+      }
+
+      // Add new entry.
+      if ($form_state['clicked_button']['#value'] == t('Submit')) {
+        $item->{$type}[$id] = array(
+          'id'          => $id,
+          'name'        => $form_state['values']['name'],
+          'type'        => $form_state['values']['type'],
+          'description' => $form_state['values']['description'],
+          'weight'      => $form_state['values']['weight'],
+        );
+        if ($type == 'parameters') {
+          $item->{$type}[$id]['options']  = $form_state['values']['options'];
+          $item->{$type}[$id]['required'] = $form_state['values']['required'];
+        }
+        elseif ($type == 'results') {
+          $item->{$type}[$id]['offline'] = $form_state['values']['offline'];
+        }
+      }
+
+      // Modify and cache the resource item.
+      ctools_object_cache_set('apihub_ui_resources', $item->name, $item);
+
+      // Regenerate parent form from cache.
+      $_POST['form_build_id'] = $input['parent_build_id'];
+      list($form, $form_state, $form_id, $form_build_id, $commands) = ajax_get_form();
+
+      $form_state['rebuild_info']['copy']['#build_id'] = $input['parent_build_id'];
+      $old_form                                        = array('#build_id' => $input['parent_build_id']);
+      drupal_process_form($form['#form_id'], $form, $form_state);
+      $form = drupal_rebuild_form($form['#form_id'], $form_state, $old_form);
+
+      // Build AJAX commands.
+      $output   = $commands;
+      $output[] = ctools_modal_command_dismiss();
+      $output[] = array(
+        'command'  => 'insert',
+        'method'   => NULL,
+        'selector' => "#{$type}-wrapper",
+        'data'     => render($form[$type]),
+        'settings' => array(),
+      );
+    }
+    print ajax_render($output);
+    exit;
   }
 
   /**
@@ -329,9 +491,13 @@ class apihub_resources_ui extends ctools_export_ui {
     parent::redirect($op, $item);
   }
 
-
   /**
+   * @param      $js
+   * @param      $input
+   * @param      $item
+   * @param null $step
    *
+   * @return array|mixed
    */
   function test_page($js, $input, $item, $step = NULL) {
     drupal_set_title($this->get_page_title('test', $item));
@@ -358,22 +524,6 @@ class apihub_resources_ui extends ctools_export_ui {
 
     return $output;
   }
-
-
-}
-
-/**
- * Edit form parameter add AJAX callback.
- *
- * @param $form
- * @param $form_state
- *
- * @return mixed
- */
-function apihub_ui_resources_form_js_add($form, $form_state) {
-  drupal_get_messages();
-
-  return $form['parameters'];
 }
 
 /**
@@ -412,7 +562,7 @@ function apihub_ui_resources_form_test($form, $form_state) {
   );
 
   // Determine which handler is currently in use.
-  $handler = key($form['handler']['#options']);
+  $handler = isset($form_state['values']['handler']) ? $form_state['values']['handler'] : key($form['handler']['#options']);
   if (isset($handler_cache->data['handler']) && in_array($handler_cache->data['handler'], array_keys($form['handler']['#options']))) {
     $handler                           = $handler_cache->data['handler'];
     $form['handler']['#default_value'] = $form['handler'];

@@ -23,6 +23,20 @@ function apihub_apihub_handler_info() {
 }
 
 /**
+ * Implement hook_apihub_pre_execute().
+ */
+function apihub_apihub_pre_execute($resource, $apihub) {
+  // @TODO - Also check if the whole API is offline.
+  if (isset($resource->settings['apihub']['offline']) && $resource->settings['apihub']['offline']) {
+    drupal_set_message(t('Resource "@resource" is in offline mode.', array(
+      '@resource' => $resource->admin_title,
+    )), 'status', FALSE);
+
+    $apihub->setHandler(new offline_apihub_handler());
+  }
+}
+
+/**
  * Class default_apihub_handler
  */
 class drupal_apihub_handler extends apihub_handler {
@@ -41,10 +55,11 @@ class drupal_apihub_handler extends apihub_handler {
    * @param       $method
    * @param       $url
    * @param array $params
+   * @param       $resource
    *
    * @return mixed
    */
-  function execute($method, $url, $params = array()) {
+  function execute($method, $url, $params = array(), $resource) {
     $params += drupal_get_query_array($this->auth);
     $url = url($url, array('query' => $params));
 
@@ -65,6 +80,47 @@ class drupal_apihub_handler extends apihub_handler {
         $json = json_encode($xml);
         $data = json_decode($json, TRUE);
         break;
+    }
+
+    return $data;
+  }
+}
+
+/**
+ * Class default_apihub_handler
+ */
+class offline_apihub_handler extends apihub_handler {
+  /**
+   * @param       $method
+   * @param       $url
+   * @param array $params
+   * @param       $resource
+   *
+   * @return array
+   */
+  function execute($method, $url, $params = array(), $resource) {
+    $data = array();
+    $map  = array();
+
+    foreach ($resource->results as $rid => $result) {
+      $map[$rid] = & $data;
+      if (!empty($result['pid'])) {
+        $parent = $result['pid'];
+        while ($parent) {
+          $map[$rid] = & $map[$parent];
+
+          if (!empty($resource->results[$parent]['pid'])) {
+            $parent = $resource->results[$parent]['pid'];
+          }
+          else {
+            unset($parent);
+          }
+        }
+      }
+
+      $key             = empty($result['name']) ? count($map[$rid]) : $result['name'];
+      $map[$rid][$key] = $result['type'] == 'group' ? array() : $result['offline'];
+      $map[$rid]       = &$map[$rid][$key];
     }
 
     return $data;

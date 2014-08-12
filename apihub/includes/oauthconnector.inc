@@ -107,7 +107,7 @@ class oauthconnector_apihub_handler extends apihub_handler {
    *
    * @return array|null
    */
-  function execute($method, $url, $params = array()) {
+  function execute($method, $url, $params = array(), $resource) {
     return oauthconnector_endpoint_call_for_user($url, $params, $this->provider, $this->account, $method);
   }
 }

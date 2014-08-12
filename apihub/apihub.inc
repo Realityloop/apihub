@@ -13,6 +13,7 @@ class apihub_request {
    * @param array  $args
    */
   function __construct($api, $handler = 'default', $args = array()) {
+    ctools_include('export');
     $this->api = ctools_export_crud_load('apihub_apis', $api);
 
     $handler = "{$handler}_apihub_handler";
@@ -29,10 +30,15 @@ class apihub_request {
    * @return mixed
    */
   function execute($method, $name, $params = array()) {
-    $method   = strtoupper($method);
-    $id       = md5("{$this->api->name}::{$method}::{$name}");
+    $method = strtoupper($method);
+    $id     = md5("{$this->api->name}::{$method}::{$name}");
+
+    ctools_include('export');
     $resource = ctools_export_crud_load('apihub_resources', $id);
     $url      = $this->api->url . $resource->path;
+
+    // Let third party module respond before resource is executed.
+    module_invoke_all('apihub_pre_execute', $resource, $this);
 
     // Cleanup parameters.
     // @TODO - Ensure required parameters are provided and not empty.
@@ -50,7 +56,11 @@ class apihub_request {
       }
     }
 
-    return $this->handler->execute($method, $url, $params);
+    return $this->handler->execute($method, $url, $params, $resource);
+  }
+
+  function setHandler($handler) {
+    $this->handler = $handler;
   }
 }
 
@@ -58,5 +68,5 @@ class apihub_request {
  * Class apihub_handler
  */
 abstract class apihub_handler {
-  abstract protected function execute($method, $url, $params = array());
+  abstract protected function execute($method, $url, $params = array(), $resource);
 }

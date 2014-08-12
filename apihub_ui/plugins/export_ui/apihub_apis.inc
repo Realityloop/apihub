@@ -39,10 +39,5 @@ function apihub_ui_apihub_apis_ctools_export_ui() {
     'title singular proper' => t('API'),
     'title plural'          => t('apis'),
     'title plural proper'   => t('APIs'),
-
-    // Export.
-    'export'                => array(
-      'admin_description'   => 'description',
-    ),
   );
 }

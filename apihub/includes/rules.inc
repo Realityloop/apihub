@@ -38,7 +38,7 @@ function apihub_rules_action_info() {
   }
 
   // Add actions from API Hub resources.
-  module_load_include('inc', 'ctools', 'includes/export');
+  ctools_include('export');
   $apis = ctools_export_crud_load_all('apihub_apis');
   foreach ($apis as $api) {
     if (!isset($api->disabled) || !$api->disabled) {
@@ -62,7 +62,7 @@ function apihub_rules_action_info() {
           'provides'  => array(
             'result' => array(
               'label' => t('Result'),
-              'type'  => 'unknown',
+              'type'  => "apihub_data_{$resource->name}",
             ),
           ),
           'group'     => t('API Hub - Resources - @api', array('@api' => $apis[$resource->api]->admin_title)),
@@ -90,7 +90,7 @@ function apihub_rules_action_info() {
           unset($actions[$action_id]['provides']['result']);
           $actions[$action_id]['provides'][$resource->settings['rules']['provides']['id']] = array(
             'label' => $resource->settings['rules']['provides']['name'],
-            'type' => $resource->settings['rules']['provides']['type'],
+            'type'  => $resource->settings['rules']['provides']['type'],
           );
         }
       }
@@ -107,11 +107,70 @@ function apihub_rules_data_info() {
   $data['apihub_handler'] = array(
     'label' => t('API Hub handler'),
     'group' => t('API Hub'),
-    //    'wrap'          => TRUE,
-    //    'property info' => array(
-    //
-    //    ),
   );
+
+  // Add data types from API Hub resources.
+  ctools_include('export');
+  $apis = ctools_export_crud_load_all('apihub_apis');
+  foreach ($apis as $api) {
+    if (!isset($api->disabled) || !$api->disabled) {
+      $resources = ctools_export_load_object('apihub_resources', 'conditions', array('api' => $api->name));
+
+      foreach ($resources as $resource) {
+        $data_id = "apihub_data_{$resource->name}";
+
+        $data[$data_id] = array(
+          'label'         => t('@label (@method @path) result', array(
+            '@label'  => $resource->admin_title,
+            '@method' => $resource->method,
+            '@path'   => $resource->path,
+          )),
+          'group'         => t('API Hub - @api', array('@api' => $apis[$resource->api]->admin_title)),
+          'wrap'          => TRUE,
+          'property info' => array(),
+        );
+
+        $map = array();
+        foreach ($resource->results as $rid => $result) {
+          $map[$rid] = & $data[$data_id]['property info'];
+          if (!empty($result['pid'])) {
+            $parent = $result['pid'];
+            while (isset($parent)) {
+              $map[$rid] = & $map[$parent];
+
+              if (!empty($resource->results[$parent]['pid'])) {
+                $parent = $resource->results[$parent]['pid'];
+              }
+              else {
+                unset($parent);
+              }
+            }
+          }
+
+          $key = empty($result['name']) ? count($map[$rid]) : $result['name'];
+          switch ($result['type']) {
+            case 'group':
+              $map[$rid][$key] = array(
+                'label'         => $result['name'],
+                'property info' => array(),
+                'type'          => 'list',
+              );
+              $map[$rid]       = & $map[$rid][$key]['property info'];
+              break;
+
+            default:
+              $map[$rid][$key] = array(
+                'label' => $result['name'],
+                'id'    => $key,
+                'type'  => $result['type'],
+              );
+              $map[$rid]       = & $map[$rid][$key];
+              break;
+          }
+        }
+      }
+    }
+  }
 
   return $data;
 }
@@ -214,7 +273,8 @@ function apihub_rules_resources_action() {
   $args = func_get_args();
 
   // Load provided API Hub resource.
-  $element  = $args[count($args) - 2];
+  $element = $args[count($args) - 2];
+  ctools_include('export');
   $resource = ctools_export_crud_load('apihub_resources', substr($element->getElementName(), 14));
 
   if ($resource) {

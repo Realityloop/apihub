@@ -20,11 +20,22 @@ foreach (module_list() as $module) {
  * Implements hook_theme().
  */
 function apihub_ui_theme() {
-  $items['apihub_ui_method_parameters'] = array(
+  $items['apihub_ui_resources_edit_form_fields'] = array(
     'render element' => 'element',
   );
 
   return $items;
+}
+
+/**
+ * Implements hook_hook_info().
+ */
+function apihub_ui_hook_info() {
+  $hooks['apihub_resources_settings'] = array(
+    'group' => 'apihub',
+  );
+
+  return $hooks;
 }
 
 /**
@@ -36,48 +47,231 @@ function apihub_ui_ctools_plugin_directory($module, $plugin) {
   }
 }
 
-function theme_apihub_ui_method_parameters($variables) {
-  $element = $variables['element'];
+/**
+ * @param $form
+ * @param $form_state
+ *
+ * @return mixed
+ */
+function apihub_ui_resources_field_form($form, $form_state) {
+  $id       = arg(7);
+  $type     = arg(9);
+  $field_id = arg(10);
+  $field    = array();
 
-  $rows  = array();
-  $flip  = array('even' => 'odd', 'odd' => 'even');
-  $class = 'even';
-  foreach (element_children($element) as $delta) {
-    if (!is_numeric($delta)) {
+  // If field ID is provided, get the current values of said field.
+  if (!is_null($field_id)) {
+    ctools_include('object-cache');
+    $cache = ctools_object_cache_get('apihub_ui_resources', $id);
+    if ($cache) {
+      $item = $cache;
+    }
+    else {
+      $item = menu_get_object('ctools_export_ui', $id);
+    }
+
+    if (isset($item->{$type}[$field_id])) {
+      $field = $item->{$type}[$field_id];
+    }
+  }
+
+  $form['name'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Name'),
+    '#default_value' => isset($field['name']) ? $field['name'] : '',
+    //    '#required'      => $type == 'parameters',
+    // @TODO - Add validation.
+    //    '#description'   => t('This field is'),
+  );
+
+  $form['type'] = array(
+    '#type'          => 'select',
+    '#title'         => t('Type'),
+    '#options'       => array(
+      'text'    => t('Text'),
+      'boolean' => t('Boolean'),
+      'decimal' => t('Number'),
+      'group'   => t('Group'),
+    ),
+    '#default_value' => isset($field['type']) ? $field['type'] : '',
+  );
+
+  // Parameter only fields.
+  if ($type == 'parameters') {
+    $form['options'] = array(
+      '#type'          => 'textarea',
+      '#title'         => t('Available options'),
+      '#rows'          => 3,
+      '#default_value' => isset($field['options']) ? $field['options'] : '',
+      '#states'        => array(
+        'visible' => array(
+          ":input[name='type']" => array('value' => 'text'),
+        ),
+      ),
+    );
+
+    $form['required'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Required'),
+      '#default_value' => isset($field['required']) ? $field['required'] : '',
+    );
+  }
+
+  elseif ($type == 'results') {
+    $form['offline'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Offline value'),
+      '#default_value' => isset($field['offline']) ? $field['offline'] : '',
+      '#description'   => t('Value to use when API is in offline mode.'),
+      '#states'        => array(
+        'invisible' => array(
+          ":input[name='type']" => array('value' => 'group'),
+        ),
+      ),
+    );
+  }
+
+  $form['description'] = array(
+    '#type'          => 'textarea',
+    '#title'         => t('Description'),
+    '#rows'          => 2,
+    '#default_value' => isset($field['description']) ? $field['description'] : '',
+  );
+
+  $form['weight'] = array(
+    '#type'          => 'weight',
+    '#title'         => t('Weight'),
+    '#default_value' => isset($field['weight']) ? $field['weight'] : '',
+    '#delta'         => 10,
+  );
+
+  $form['submit'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  if (isset($field_id)) {
+    $form['id'] = array(
+      '#type'  => 'value',
+      '#value' => $field_id,
+    );
+
+    $form['delete'] = array(
+      '#type'  => 'submit',
+      '#value' => t('Delete'),
+    );
+  }
+
+  $form['parent_build_id'] = array(
+    '#type'  => 'hidden',
+    '#value' => $form_state['form_build_id'],
+  );
+
+  return $form;
+}
+
+/**
+ * Machine name exists callback for Field add form.
+ *
+ * @return bool
+ *
+ * @TODO - This
+ */
+function apihub_ui_resources_field_exists() {
+  return FALSE;
+}
+
+/**
+ * @param $variables
+ *
+ * @return string
+ */
+function theme_apihub_ui_resources_edit_form_fields($variables) {
+  $element = $variables['element'];
+  $type    = drupal_substr($element['#id'], 5);
+
+  $rows   = array();
+  $header = array(
+    t('Name'),
+    t('Type'),
+    t('Description'),
+    t('Operations'),
+    t('Weight'),
+  );
+
+  // Generate depths.
+  $depth    = array();
+  $elements = element_children($element);
+  while ($elements) {
+    $id = array_shift($elements);
+    if (strpos($id, '_') === 0) {
       continue;
     }
 
-    $parameter = $element[$delta];
-
-    $row    = array();
-    $fields = array('name', 'id', 'type', 'options', 'required');
-    foreach ($fields as $field) {
-      $row[$field] = array('data' => render($parameter[$field]));
+    if (empty($element[$id]['pid']['#value'])) {
+      $depth[$id] = 0;
     }
-
-    $rows[] = array(
-      'data'        => $row,
-      'no_striping' => TRUE,
-      'class'       => array($class),
-    );
-    $rows[] = array(
-      'data'        => array(
-        array(
-          'data'    => render($parameter['description']),
-          'colspan' => 5,
-        )
-      ),
-      'no_striping' => TRUE,
-      'class'       => array($class),
-    );
-
-    $class = $flip[$class];
+    else {
+      if (isset($depth[$element[$id]['pid']['#value']])) {
+        $depth[$id] = $depth[$element[$id]['pid']['#value']] + 1;
+      }
+      else {
+        array_push($elements, $id);
+      }
+    }
   }
 
-  $header = array(t('Name'), t('ID'), t('Type'), t('Options'), t('Required'));
+  foreach (element_children($element) as $id) {
+    if (strpos($id, '_') === 0) {
+      continue;
+    }
+    $row = array();
 
-  return theme('table', array(
-    'header' => $header,
-    'rows'   => $rows,
-  )) . drupal_render($element['_add']);
+    // Table drag configuration.
+    $element[$id]['id']['#attributes']['class']     = array("{$type}-id");
+    $element[$id]['pid']['#attributes']['class']    = array("{$type}-pid");
+    $element[$id]['weight']['#attributes']['class'] = array("{$type}-weight");
+
+    $class = array('draggable');
+    if ($element[$id]['type']['#value'] != 'group') {
+      $class[] = 'tabledrag-leaf';
+    }
+
+    $indentation = theme('indentation', array('size' => $depth[$id]));
+
+    // Name.
+    $row[] = $indentation . t('<strong>@name</strong> !required', array(
+        '@name'     => $element[$id]['name']['#value'],
+        '!required' => isset($element[$id]['required']) && $element[$id]['required']['#value'] ? theme('form_required_marker') : '',
+      ));
+
+    // Type.
+    $row[] = $element[$id]['type']['#value'];
+
+    // Description.
+    $row[] = $element[$id]['description']['#value'];
+
+    // Operations.
+    $row[] = render($element[$id]['_edit_url']) . render($element[$id]['_edit']);
+
+    // Table drag elements.
+    $row[] = render($element[$id]['weight']) . render($element[$id]['id']) . render($element[$id]['pid']);
+
+    $rows[] = array(
+      'data'  => $row,
+      'class' => $class,
+    );
+  }
+
+  $output = theme('table', array(
+    'header'     => $header,
+    'rows'       => $rows,
+    'attributes' => array('id' => "{$type}-table"),
+  ));
+  $output .= drupal_render_children($element);
+
+  drupal_add_tabledrag("{$type}-table", 'match', 'parent', "{$type}-pid", "{$type}-pid", "{$type}-id");
+  drupal_add_tabledrag("{$type}-table", 'order', 'sibling', "{$type}-weight");
+
+  return $output;
 }
