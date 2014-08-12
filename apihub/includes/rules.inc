@@ -85,13 +85,16 @@ function apihub_rules_action_info() {
           }
         }
 
-        // Provides.
-        if (!empty($resource->settings['rules']['provides'])) {
-          unset($actions[$action_id]['provides']['result']);
-          $actions[$action_id]['provides'][$resource->settings['rules']['provides']['id']] = array(
-            'label' => $resource->settings['rules']['provides']['name'],
-            'type'  => $resource->settings['rules']['provides']['type'],
-          );
+        // Provides - <list>.
+        // @TODO - Deal with 'root' settings here as well?
+        $root = array();
+        foreach ($resource->results as $rid => $result) {
+          if (empty($result['pid'])) {
+            $root[] = $rid;
+          }
+        }
+        if (count($root) == 1 && $resource->results[$root[0]]['type'] == 'group') {
+          $actions[$action_id]['provides']['result']['type'] = "list<apihub_data_{$resource->name}>";
         }
       }
     }
@@ -117,6 +120,22 @@ function apihub_rules_data_info() {
       $resources = ctools_export_load_object('apihub_resources', 'conditions', array('api' => $api->name));
 
       foreach ($resources as $resource) {
+        // Reset the root if only root element is a group.
+        $root = array();
+        foreach ($resource->results as $rid => $result) {
+          if (empty($result['pid'])) {
+            $root[] = $rid;
+          }
+        }
+        if (count($root) == 1 && $resource->results[$root[0]]['type'] == 'group') {
+          unset($resource->results[$root[0]]);
+          foreach ($resource->results as $rid => &$result) {
+            if ($result['pid'] == $root[0]) {
+              $result['pid'] = '';
+            }
+          }
+        }
+
         $data_id = "apihub_data_{$resource->name}";
 
         $data[$data_id] = array(
@@ -253,6 +272,7 @@ function apihub_rules_handlers_action() {
  * @return array
  */
 function apihub_rules_resources_parameter_options($element, $name) {
+  ctools_include('export');
   $resource = ctools_export_crud_load('apihub_resources', substr($element->getElementName(), 14));
   foreach ($resource->parameters as $_parameter) {
     if ($_parameter['id'] == $name) {
