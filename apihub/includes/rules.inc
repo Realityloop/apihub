@@ -72,7 +72,7 @@ function apihub_rules_action_info() {
         // Parameters.
         if (!empty($resource->parameters)) {
           foreach ($resource->parameters as $parameter) {
-            $actions[$action_id]['parameter'][$parameter['id']] = array(
+            $actions[$action_id]['parameter'][$parameter['name']] = array(
               'label'         => $parameter['name'],
               'description'   => $parameter['description'],
               'type'          => 'text',
@@ -304,7 +304,7 @@ function apihub_rules_resources_action() {
     // @TODO - Add some conditional checks to ensure valid settings.
     if (isset($resource->parameters) && is_array($resource->parameters)) {
       foreach ($resource->parameters as $parameter) {
-        $parameters[$parameter['id']] = array_shift($args);
+        $parameters[$parameter['name']] = array_shift($args);
       }
     }
 

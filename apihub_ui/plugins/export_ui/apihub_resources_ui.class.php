@@ -594,9 +594,9 @@ function apihub_ui_resources_form_test($form, $form_state) {
       continue;
     }
 
-    $form['input'][$parameter['id']] = _apihub_field_to_fapi($parameter);
-    if (isset($input_cache->data[$parameter['id']])) {
-      $form['input'][$parameter['id']]['#default_value'] = $input_cache->data[$parameter['id']];
+    $form['input'][$parameter['name']] = _apihub_field_to_fapi($parameter);
+    if (isset($input_cache->data[$parameter['name']])) {
+      $form['input'][$parameter['name']]['#default_value'] = $input_cache->data[$parameter['name']];
     }
   }
   $inputs = element_children($form['input']);
