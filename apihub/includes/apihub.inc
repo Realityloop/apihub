@@ -13,6 +13,11 @@ function apihub_apihub_handler_info() {
       'name'     => t('Drupal'),
       'class'    => 'drupal_apihub_handler',
       'settings' => array(
+        'url'  => array(
+          'type'        => 'text',
+          'name'        => t('URL'),
+          'description' => t('Server URL, leave blank to use API default'),
+        ),
         'auth' => array(
           'type' => 'text',
           'name' => t('Authentication'),
@@ -41,6 +46,7 @@ function apihub_apihub_pre_execute($resource, $apihub) {
  */
 class drupal_apihub_handler extends apihub_handler {
   protected $auth = NULL;
+  protected $url = NULL;
 
   /**
    * @param array $args
@@ -48,6 +54,10 @@ class drupal_apihub_handler extends apihub_handler {
   function __construct($args = array()) {
     if (isset($args['auth'])) {
       $this->auth = $args['auth'];
+    }
+
+    if (isset($args['url'])) {
+      $this->url = $args['url'];
     }
   }
 
@@ -60,6 +70,13 @@ class drupal_apihub_handler extends apihub_handler {
    * @return mixed
    */
   function execute($method, $url, $params = array(), $resource) {
+    // Override API url with handler provided URL.
+    if (!empty($this->url)) {
+      ctools_include('export');
+      $api = ctools_export_crud_load('apihub_apis', $resource->api);
+      $url = str_replace($api->url, $this->url, $url);
+    }
+
     $params += drupal_get_query_array($this->auth);
     $url = url($url, array('query' => $params));
 
