@@ -42,8 +42,12 @@ class apihub_request {
 
     // Cleanup parameters.
     // @TODO - Ensure required parameters are provided and not empty.
-    $params = array_filter($params);
     $params = is_null($params) ? array() : $params;
+    foreach ($params as $key => $value) {
+      if ((empty($params[$key]) && !is_numeric($params[$key])) || is_null($params[$key])) {
+        unset($params[$key]);
+      }
+    }
 
     // Substitute parameters in URL.
     foreach ($params as $key => $value) {
