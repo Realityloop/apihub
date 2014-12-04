@@ -208,15 +208,28 @@ function theme_apihub_ui_resources_edit_form_fields($variables) {
       continue;
     }
 
+    // If element has no PID, make it a root element.
     if (empty($element[$id]['pid']['#value'])) {
       $depth[$id] = 0;
     }
+
     else {
+      // If element has a PID and it has been mapped, map this element relative
+      // to it's parents depth.
       if (isset($depth[$element[$id]['pid']['#value']])) {
         $depth[$id] = $depth[$element[$id]['pid']['#value']] + 1;
       }
-      else {
+
+      // If element has a PID that hasn't yet been mapped, push this element
+      // to the back of the list to be processed later.
+      elseif (isset($element[$element[$id]['pid']['#value']])) {
         array_push($elements, $id);
+      }
+
+      // If element has a PID that doesn't exist, make it a root element. This
+      // prevents an un-ending loop.
+      else {
+        $depth[$id] = 0;
       }
     }
   }
