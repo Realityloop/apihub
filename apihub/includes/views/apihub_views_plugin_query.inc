@@ -52,8 +52,8 @@ class apihub_views_plugin_query extends views_plugin_query {
     }
 
     $this->where[$group]['conditions'][] = array(
-      'field' => $snippet,
-      'value' => $args,
+      'field'    => $snippet,
+      'value'    => $args,
       'operator' => 'formula',
     );
   }
@@ -61,9 +61,9 @@ class apihub_views_plugin_query extends views_plugin_query {
   /**
    * Ensure a table exists in the queue; Currently does nothing..
    *
-   * @param $table
+   * @param            $table
    *   The unaliased name of the table to ensure.
-   * @param $relationship
+   * @param            $relationship
    *   The relationship to ensure the table links to. Each relationship will
    *   get a unique instance of the table being added. If not specified,
    *   will be the primary table.
@@ -74,7 +74,8 @@ class apihub_views_plugin_query extends views_plugin_query {
    *   The alias used to refer to this specific table, or NULL if the table
    *   cannot be ensured.
    */
-  function ensure_table($table, $relationship = NULL, $join = NULL) {}
+  function ensure_table($table, $relationship = NULL, $join = NULL) {
+  }
 
   /**
    * Executes the query and fills the associated view object with according
@@ -90,16 +91,23 @@ class apihub_views_plugin_query extends views_plugin_query {
    *   The view which is executed.
    */
   function execute(&$view) {
+    if (!isset($view->query->options['handler'])) {
+      drupal_set_message(t('API Hub handler has not been configured. Set in !link.', array(
+        '!link' => $view->display[$view->current_display]->handler->option_link(t('Query Settings'), 'query'),
+      )));
+      return;
+    }
+
     // Load current resource.
     ctools_include('export');
     $resource = ctools_export_crud_load('apihub_resources', substr($view->base_table, 7));
 
     // Process the request.
-    $request = new apihub_request($resource->api, 'drupal', array('auth' => $auth));
+    $request = new apihub_request($resource->api, $view->query->options['handler']['handler'], $view->query->options['handler']['settings']);
     $result  = $request->execute($resource->method, $resource->path, array());
 
     // Set root element.
-    if (isset($resource->settings['views']['root'])) {
+    if (!empty($resource->settings['views']['root'])) {
       $result = $result->{$resource->settings['views']['root']};
     }
 
@@ -114,6 +122,9 @@ class apihub_views_plugin_query extends views_plugin_query {
    */
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
+
+    $defaults        = isset($form_state['view']->query->options['handler']) ? $form_state['view']->query->options['handler'] : array();
+    $form['handler'] = apihub_handlers_form($defaults);
   }
 
 
