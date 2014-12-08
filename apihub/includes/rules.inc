@@ -108,8 +108,9 @@ function apihub_rules_action_info() {
  */
 function apihub_rules_data_info() {
   $data['apihub_handler'] = array(
-    'label' => t('API Hub handler'),
-    'group' => t('API Hub'),
+    'label'    => t('API Hub handler'),
+    'group'    => t('API Hub'),
+    'ui class' => 'APIHubRulesDataUIHandler',
   );
 
   // Add data types from API Hub resources.

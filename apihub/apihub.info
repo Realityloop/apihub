@@ -17,6 +17,12 @@ files[] = apihub.inc
 
 
 
+; Files - Rules integration
+
+files[] = includes/rules/apihub_rules_data_ui_handler.inc
+
+
+
 ; Files - Views integration
 
 files[] = includes/views/apihub_views_plugin_query.inc
