@@ -52,6 +52,69 @@ function apihub_handlers_load($handler) {
 }
 
 /**
+ * @param array $defaults
+ *
+ * @return mixed
+ */
+function apihub_handlers_form($defaults = array()) {
+  $handlers = apihub_handlers();
+  $options  = array();
+  foreach ($handlers as $id => $handler) {
+    $options[$id] = $handler['name'];
+  }
+
+  $form['handler'] = array(
+    '#type'    => 'select',
+    '#title'   => t('Handler'),
+    '#options' => $options,
+    '#ajax'    => array(
+      'callback' => 'apihub_handlers_form_js',
+      'wrapper'  => 'handler-form-settings-output',
+    ),
+  );
+
+  $form['settings'] = array(
+    '#type'        => 'fieldset',
+    '#title'       => t('Handler settings'),
+    '#tree'        => TRUE,
+    '#collapsible' => TRUE,
+    '#prefix'      => '<div id="handler-form-settings-output">',
+    '#suffix'      => '</div>',
+  );
+
+  // Determine which handler is currently in use.
+  $handler = isset($defaults['handler']) ? $defaults['handler'] : key($form['handler']['#options']);
+  $form['handler']['#default_value'] = $handler;
+
+  // Build Handler settings form.
+  $handler = apihub_handlers_load($handler);
+  if ($handler && isset($handler['settings']) && !empty($handler['settings'])) {
+    foreach ($handler['settings'] as $id => $setting) {
+      $form['settings'][$id] = _apihub_field_to_fapi($setting);
+      if (isset($defaults['settings'][$id])) {
+        $form['settings'][$id]['#default_value'] = $defaults['settings'][$id];
+      }
+    }
+  }
+
+  return $form;
+}
+
+/**
+ * Handlers settings form AJAX callback.
+ *
+ * @param $form
+ * @param $form_state
+ *
+ * @return mixed
+ */
+function apihub_handlers_form_js($form, $form_state) {
+  drupal_get_messages();
+
+  return $form['settings'];
+}
+
+/**
  * Convert an API Hub field to a FAPI element.
  *
  * @param $field

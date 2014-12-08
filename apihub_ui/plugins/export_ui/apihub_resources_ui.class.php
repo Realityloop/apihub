@@ -542,41 +542,11 @@ function apihub_ui_resources_form_test($form, $form_state) {
   $handler_cid   = "apihub:{$item->api}:handler:{$user->uid}";
   $handler_cache = cache_get($handler_cid, 'cache_apihub');
 
-  $form['handler'] = array(
-    '#type'    => 'select',
-    '#title'   => t('Handler'),
-    '#options' => apihub_ui_resources_handlers(),
-    '#ajax'    => array(
-      'callback' => 'apihub_ui_resources_form_js_test_handler_settings',
-      'wrapper'  => 'test-handler-settings-output',
-    ),
-  );
-
-  $form['handler_settings'] = array(
-    '#type'        => 'fieldset',
-    '#title'       => t('Handler settings'),
-    '#tree'        => TRUE,
-    '#collapsible' => TRUE,
-    '#prefix'      => '<div id="test-handler-settings-output">',
-    '#suffix'      => '</div>',
-  );
-
-  // Determine which handler is currently in use.
-  $handler = isset($form_state['values']['handler']) ? $form_state['values']['handler'] : key($form['handler']['#options']);
-  if (isset($handler_cache->data['handler']) && in_array($handler_cache->data['handler'], array_keys($form['handler']['#options']))) {
-    $handler                           = $handler_cache->data['handler'];
-    $form['handler']['#default_value'] = $form['handler'];
+  $defaults = isset($form_state['values']) ? $form_state['values'] : NULL;
+  if (isset($handler_cache->data)) {
+    $defaults = $handler_cache->data;
   }
-
-  $handler = apihub_handlers_load($handler);
-  if ($handler && isset($handler['settings']) && !empty($handler['settings'])) {
-    foreach ($handler['settings'] as $id => $setting) {
-      $form['handler_settings'][$id] = _apihub_field_to_fapi($setting);
-      if (isset($handler_cache->data['settings'][$id])) {
-        $form['handler_settings'][$id]['#default_value'] = $handler_cache->data['settings'][$id];
-      }
-    }
-  }
+  $form += apihub_handlers_form($defaults);
 
   // Input.
   $input_cid   = "apihub:{$item->api}:input:{$item->name}:{$user->uid}";
@@ -626,20 +596,6 @@ function apihub_ui_resources_form_test($form, $form_state) {
 }
 
 /**
- * Test form handler settings AJAX callback.
- *
- * @param $form
- * @param $form_state
- *
- * @return mixed
- */
-function apihub_ui_resources_form_js_test_handler_settings($form, $form_state) {
-  drupal_get_messages();
-
-  return $form['handler_settings'];
-}
-
-/**
  * Test form output AJAX callback.
  *
  * @param $form
@@ -657,7 +613,7 @@ function apihub_ui_resources_form_js_test_output($form, $form_state) {
   $handler_cid = "apihub:{$resource->api}:handler:{$user->uid}";
   cache_set($handler_cid, array(
     'handler'  => $values['handler'],
-    'settings' => $values['handler_settings']
+    'settings' => $values['settings']
   ), 'cache_apihub');
 
   // Store input values for this resource and current user.
@@ -668,7 +624,7 @@ function apihub_ui_resources_form_js_test_output($form, $form_state) {
   drupal_get_messages();
 
   // Process request.
-  $request = new apihub_request($resource->api, $values['handler'], $values['handler_settings']);
+  $request = new apihub_request($resource->api, $values['handler'], $values['settings']);
   $result  = $request->execute($resource->method, $resource->path, $form_state['values']['input']);
 
   if (module_exists('devel')) {
@@ -679,22 +635,6 @@ function apihub_ui_resources_form_js_test_output($form, $form_state) {
   }
 
   return $form['output'];
-}
-
-/**
- * API Hub handlers to options array.
- *
- * @return array
- */
-function apihub_ui_resources_handlers() {
-  $handlers = apihub_handlers();
-
-  $options = array();
-  foreach ($handlers as $id => $handler) {
-    $options[$id] = $handler['name'];
-  }
-
-  return $options;
 }
 
 /**
