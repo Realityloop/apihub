@@ -74,7 +74,10 @@ class drupal_apihub_handler extends apihub_handler {
     if (!empty($this->url)) {
       ctools_include('export');
       $api = ctools_export_crud_load('apihub_apis', $resource->api);
-      $url = str_replace($api->url, $this->url, $url);
+      if (!empty($api->url)) {
+        $url = str_replace($api->url, '', $url);
+      }
+      $url = $this->url . $url;
     }
 
     $params += drupal_get_query_array($this->auth);
