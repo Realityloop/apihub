@@ -125,3 +125,22 @@ function apihub_schema() {
 
   return $schema;
 }
+
+/**
+ * Implements hook_field_schema().
+ */
+function apihub_field_schema($field) {
+  $schema['columns']['handler'] = array(
+    'type'     => 'varchar',
+    'length'   => 128,
+    'not null' => FALSE,
+  );
+
+  $schema['columns']['settings'] = array(
+    'type' => 'text',
+    'size' => 'big',
+    'not null' => TRUE,
+  );
+
+  return $schema;
+}
