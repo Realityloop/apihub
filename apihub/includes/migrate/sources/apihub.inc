@@ -44,11 +44,11 @@ class MigrateSourceAPIHub extends MigrateSource {
   protected $results = array();
 
   /**
-   * Query result row Id.
+   * Query results iterator operation.
    *
-   * @var int
+   * @var string
    */
-  protected $rowId = 0;
+  protected $iteratorOp = 'current';
 
   /**
    * Simple initialization.
@@ -149,8 +149,8 @@ class MigrateSourceAPIHub extends MigrateSource {
       $results =& $this->results->{$this->resource->settings['apihub']['root']};
     }
 
-    $row = isset($results[$this->rowId]) ? $results[$this->rowId] : FALSE;
-    $this->rowId++;
+    $row              = $this->iteratorOp == 'current' ? current($results) : next($results);
+    $this->iteratorOp = 'next';
 
     // If we are out of rows, we are either out of data or we need to page.
     if (!$row) {
@@ -158,9 +158,9 @@ class MigrateSourceAPIHub extends MigrateSource {
         $offset = $this->offset + $this->resource->settings['apihub']['pager']['offset'] + count($results);
 
         if ($offset < $this->computeCount()) {
-          $this->offset  = $offset;
-          $this->results = array();
-          $this->rowId   = 0;
+          $this->offset     = $offset;
+          $this->results    = array();
+          $this->iteratorOp = 'current';
           $this->getResults();
 
           return $this->getNextRow();
