@@ -107,8 +107,8 @@ class apihub_views_plugin_query extends views_plugin_query {
     $result  = $request->execute($resource->method, $resource->path, array());
 
     // Set root element.
-    if (!empty($resource->settings['views']['root'])) {
-      $result = $result->{$resource->settings['views']['root']};
+    if (!empty($resource->settings['apihub']['root'])) {
+      $result = $result->{$resource->settings['apihub']['root']};
     }
 
     foreach ($result as $key => $item) {

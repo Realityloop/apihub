@@ -17,6 +17,12 @@ files[] = apihub.inc
 
 
 
+; Files - Migration handlers
+
+files[] = includes/migrate/sources/apihub.inc
+
+
+
 ; Files - Rules integration
 
 files[] = includes/rules/apihub_rules_data_ui_handler.inc
