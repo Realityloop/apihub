@@ -47,10 +47,10 @@ function apihub_field_formatter_view($entity_type, $entity, $field, $instance, $
   switch ($display['type']) {
     case 'apihub_handler':
       foreach ($items as $delta => $item) {
-        $elements[$delta]['handler'] = array(
+        $elements[$delta]['class'] = array(
           '#type'   => 'item',
           '#title'  => 'handler',
-          '#markup' => $item['handler'],
+          '#markup' => $item['class'],
         );
         foreach ($item['settings'] as $setting => $value) {
           $elements[$delta]['settings'][$setting] = array(
@@ -84,7 +84,7 @@ function apihub_field_widget_info() {
 function apihub_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   switch ($instance['widget']['type']) {
     case 'apihub_handler':
-      $element += apihub_handlers_form($items[0]);
+      $element += apihub_handlers_form($items[0], FALSE);
       break;
   }
 

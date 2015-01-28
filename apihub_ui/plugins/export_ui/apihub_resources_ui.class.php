@@ -365,7 +365,7 @@ class apihub_resources_ui extends apihub_ui {
     $title = parent::get_page_title($op, $item);
 
     if (!empty($item)) {
-      $title = str_replace('%api', check_plain($item->api), $title);
+      $title = str_replace('%api', check_plain($item->api->name), $title);
       $title = str_replace('%method', check_plain($item->method), $title);
       $title = str_replace('%path', check_plain($item->path), $title);
     }
@@ -420,7 +420,7 @@ class apihub_resources_ui extends apihub_ui {
    *   TRUE if the item should be excluded.
    */
   function list_filter($form_state, $item) {
-    if ($item->api != arg(4)) {
+    if ($item->api->name != arg(4)) {
       return TRUE;
     }
 
@@ -539,7 +539,7 @@ function apihub_ui_resources_form_test($form, $form_state) {
   $item = $form_state['item'];
 
   // Handler.
-  $handler_cid   = "apihub:{$item->api}:handler:{$user->uid}";
+  $handler_cid   = "apihub:{$item->api->name}:handler:{$user->uid}";
   $handler_cache = cache_get($handler_cid, 'cache_apihub');
 
   $defaults = isset($form_state['values']) ? $form_state['values'] : NULL;
@@ -549,7 +549,7 @@ function apihub_ui_resources_form_test($form, $form_state) {
   $form += apihub_handlers_form($defaults);
 
   // Input.
-  $input_cid   = "apihub:{$item->api}:input:{$item->name}:{$user->uid}";
+  $input_cid   = "apihub:{$item->api->name}:input:{$item->name}:{$user->uid}";
   $input_cache = cache_get($input_cid, 'cache_apihub');
 
   $form['input'] = array(
@@ -610,22 +610,18 @@ function apihub_ui_resources_form_js_test_output($form, $form_state) {
   $values   = $form_state['values'];
 
   // Store handler settings for this resource's api and current user.
-  $handler_cid = "apihub:{$resource->api}:handler:{$user->uid}";
-  cache_set($handler_cid, array(
-    'handler'  => $values['handler'],
-    'settings' => $values['settings']
-  ), 'cache_apihub');
+  $handler_cid = "apihub:{$resource->api->name}:handler:{$user->uid}";
+  cache_set($handler_cid, $values['handler'], 'cache_apihub');
 
   // Store input values for this resource and current user.
-  $input_cid = "apihub:{$resource->api}:input:{$resource->name}:{$user->uid}";
+  $input_cid = "apihub:{$resource->api->name}:input:{$resource->name}:{$user->uid}";
   cache_set($input_cid, $values['input'], 'cache_apihub');
 
   // Clear messages.
   drupal_get_messages();
 
   // Process request.
-  $request = new apihub_request($resource->api, $values['handler'], $values['settings']);
-  $result  = $request->execute($resource->method, $resource->path, $form_state['values']['input']);
+  $result = $resource->execute($values['input'], $values['handler'], array('debug' => TRUE));
 
   if (module_exists('devel')) {
     $form['output']['#markup'] = kprint_r($result, TRUE);

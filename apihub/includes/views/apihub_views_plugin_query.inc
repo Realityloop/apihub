@@ -103,7 +103,7 @@ class apihub_views_plugin_query extends views_plugin_query {
     $resource = ctools_export_crud_load('apihub_resources', substr($view->base_table, 7));
 
     // Process the request.
-    $request = new apihub_request($resource->api, $view->query->options['handler']['handler'], $view->query->options['handler']['settings']);
+    $request = new apihubRequest($resource->api, $view->query->options['handler']['handler'], $view->query->options['handler']['settings']);
     $result  = $request->execute($resource->method, $resource->path, array());
 
     // Set root element.

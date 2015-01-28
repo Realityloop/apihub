@@ -14,7 +14,13 @@ dependencies[] = ctools
 ; Files
 
 files[] = classes/apihub_handler.inc
+files[] = classes/apihub_resource.inc
 
+
+
+; Files - API Hub handlers
+
+files[] = classes/handlers/drupal.inc
 
 
 ; Files - Migration handlers

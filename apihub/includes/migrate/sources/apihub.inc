@@ -9,13 +9,6 @@
  */
 class MigrateSourceAPIHub extends MigrateSource {
   /**
-   * API Hub handler and settings.
-   *
-   * @var array
-   */
-  protected $handler = array();
-
-  /**
    * Query offset for paged queries.
    *
    * @var int
@@ -60,11 +53,14 @@ class MigrateSourceAPIHub extends MigrateSource {
     parent::__construct($options);
 
     ctools_include('export');
-    $resource = ctools_export_crud_load('apihub_resources', $resource);
-    if (!is_null($resource)) {
-      $this->resource = $resource;
+    $this->resource = ctools_export_crud_load('apihub_resources', $resource);
+    if (is_null($this->resource)) {
+      throw new Exception("API Hub resource doesn't exist");
     }
-    $this->handler    = $handler;
+
+    $this->resource->setParameters($parameters);
+    $this->resource->setHandler($handler);
+
     $this->parameters = $parameters;
   }
 
@@ -74,8 +70,7 @@ class MigrateSourceAPIHub extends MigrateSource {
    * @return string
    */
   public function __toString() {
-    // @TODO - Return the URL(s) being queried.
-    return $this->resource->name;
+    return $this->resource->getUrl();
   }
 
   /**
@@ -87,6 +82,35 @@ class MigrateSourceAPIHub extends MigrateSource {
    */
   public function fields() {
     $fields = array();
+
+    // Get resource root.
+    $root = array();
+    foreach ($this->resource->results as $rid => $result) {
+      if (empty($result['pid']) && $result['type'] == 'group') {
+        $root[] = $rid;
+      }
+    }
+    if (count($root) == 1) {
+      $root = $root[0];
+    }
+
+    // Build list of resource fields.
+    foreach ($this->resource->results as $result) {
+      if ($result['id'] == $root || $result['type'] == 'group') {
+        continue;
+      }
+
+      $field       = array($result['name']);
+      $description = $result['description'];
+      while (!empty($result['pid'])) {
+        $result = $this->resource->results[$result['pid']];
+        if ($result['id'] == $root) {
+          break;
+        }
+        array_unshift($field, $result['name']);
+      }
+      $fields[implode(':', $field)] = $description;
+    }
 
     return $fields;
   }
@@ -116,11 +140,10 @@ class MigrateSourceAPIHub extends MigrateSource {
   public function getResults() {
     if (empty($this->results)) {
       // Process the request.
-      $request = new apihub_request($this->resource->api, $this->handler['handler'], $this->handler['settings']);
       if (isset($this->resource->settings['apihub']['pager']['offset'])) {
         $this->parameters[$this->resource->settings['apihub']['pager']['offset']] = $this->offset;
       }
-      $this->results = $request->execute($this->resource->method, $this->resource->path, $this->parameters);
+      $this->results = $this->resource->execute($this->parameters);
     }
 
     return $this->results;

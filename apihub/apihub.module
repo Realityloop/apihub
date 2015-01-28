@@ -25,15 +25,12 @@ function apihub_handlers($reset = FALSE) {
   $handlers =& drupal_static(__FUNCTION__, array());
 
   if (empty($handlers) || $reset) {
-    $_handlers = module_invoke_all('apihub_handler_info');
-    foreach ($_handlers as $id => $handler) {
+    $handlers = module_invoke_all('apihub_handler_info');
+    foreach ($handlers as $class => $title) {
       // Ensure class exists.
-      if (!isset($handler['class']) || !class_exists($handler['class'])) {
-        continue;
+      if (!class_exists($class) || !is_subclass_of($class, 'apihubHandler')) {
+        unset($handlers['class']);
       }
-
-      $handler['id'] = $id;
-      $handlers[$id] = $handler;
     }
   }
 
@@ -56,17 +53,11 @@ function apihub_handlers_load($handler) {
  *
  * @return mixed
  */
-function apihub_handlers_form($defaults = array()) {
-  $handlers = apihub_handlers();
-  $options  = array();
-  foreach ($handlers as $id => $handler) {
-    $options[$id] = $handler['name'];
-  }
-
-  $form['handler'] = array(
+function apihub_handlers_form($defaults = array(), $container = TRUE) {
+  $form['class'] = array(
     '#type'    => 'select',
     '#title'   => t('Handler'),
-    '#options' => $options,
+    '#options' => apihub_handlers(),
     '#ajax'    => array(
       'callback' => 'apihub_handlers_form_js',
       'wrapper'  => 'handler-form-settings-output',
@@ -83,18 +74,30 @@ function apihub_handlers_form($defaults = array()) {
   );
 
   // Determine which handler is currently in use.
-  $handler = isset($defaults['handler']) ? $defaults['handler'] : key($form['handler']['#options']);
-  $form['handler']['#default_value'] = $handler;
+  $handler = isset($defaults['class']) ? $defaults['class'] : key($form['class']['#options']);
+
+  $form['class']['#default_value'] = $handler;
 
   // Build Handler settings form.
-  $handler = apihub_handlers_load($handler);
-  if ($handler && isset($handler['settings']) && !empty($handler['settings'])) {
-    foreach ($handler['settings'] as $id => $setting) {
-      $form['settings'][$id] = _apihub_field_to_fapi($setting);
-      if (isset($defaults['settings'][$id])) {
-        $form['settings'][$id]['#default_value'] = $defaults['settings'][$id];
+  if (class_exists($handler)) {
+    $handler = new $handler();
+    if (method_exists($handler, 'settingsForm')) {
+      foreach ($handler->settingsForm() as $id => $setting) {
+        $form['settings'][$id] = _apihub_field_to_fapi($setting);
+        if (isset($defaults['settings'][$id])) {
+          $form['settings'][$id]['#default_value'] = $defaults['settings'][$id];
+        }
       }
     }
+  }
+
+  if ($container) {
+    $form = array(
+      'handler' => array(
+          '#type' => 'container',
+          '#tree' => TRUE,
+        ) + $form
+    );
   }
 
   return $form;

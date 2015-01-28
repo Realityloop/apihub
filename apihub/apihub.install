@@ -10,113 +10,114 @@
 function apihub_schema() {
   $schema = array();
 
-  $schema['cache_apihub'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_apihub']                = drupal_get_schema_unprocessed('system', 'cache');
   $schema['cache_apihub']['description'] = 'Cache table for API Hub.';
 
   $schema['apihub_apis'] = array(
-    'export' => array(
-      'key' => 'name',
-      'key name' => 'Name',
-      'primary key' => 'name',
-      'identifier' => 'api',
+    'export'      => array(
+      'key'          => 'name',
+      'key name'     => 'Name',
+      'primary key'  => 'name',
+      'identifier'   => 'api',
       'default hook' => 'apihub_apis',
-      'api' => array(
-        'owner' => 'apihub',
-        'api' => 'apihub',
+      'api'          => array(
+        'owner'           => 'apihub',
+        'api'             => 'apihub',
         'minimum_version' => 1,
         'current_version' => 1,
       ),
     ),
-    'fields' => array(
-      'name' => array(
-        'type' => 'varchar',
-        'length' => 128,
+    'fields'      => array(
+      'name'              => array(
+        'type'     => 'varchar',
+        'length'   => 128,
         'not null' => TRUE,
-        'default' => '',
+        'default'  => '',
       ),
-      'admin_title' => array(
-        'type' => 'varchar',
-        'length' => 128,
+      'admin_title'       => array(
+        'type'     => 'varchar',
+        'length'   => 128,
         'not null' => TRUE,
-        'default' => '',
+        'default'  => '',
       ),
       'admin_description' => array(
-        'type' => 'varchar',
-        'length' => 255,
+        'type'     => 'varchar',
+        'length'   => 255,
         'not null' => FALSE,
-        'default' => '',
+        'default'  => '',
       ),
-      'url' => array(
-        'type' => 'varchar',
-        'length' => 128,
+      'url'               => array(
+        'type'     => 'varchar',
+        'length'   => 128,
         'not null' => TRUE,
-        'default' => '',
+        'default'  => '',
       ),
     ),
     'primary key' => array('name'),
   );
 
   $schema['apihub_resources'] = array(
-    'export' => array(
-      'key' => 'name',
-      'key name' => 'Name',
-      'primary key' => 'name',
-      'identifier' => 'resource',
+    'export'      => array(
+      'key'          => 'name',
+      'key name'     => 'Name',
+      'primary key'  => 'name',
+      'identifier'   => 'resource',
       'default hook' => 'apihub_resources',
-      'api' => array(
-        'owner' => 'apihub',
-        'api' => 'apihub',
+      'object'       => 'apihubResource',
+      'api'          => array(
+        'owner'           => 'apihub',
+        'api'             => 'apihub',
         'minimum_version' => 1,
         'current_version' => 1,
       ),
     ),
-    'fields' => array(
-      'api' => array(
-        'type' => 'varchar',
-        'length' => 128,
+    'fields'      => array(
+      'api'               => array(
+        'type'     => 'varchar',
+        'length'   => 128,
         'not null' => TRUE,
-        'default' => '',
+        'default'  => '',
       ),
-      'name' => array(
-        'type' => 'varchar',
-        'length' => 128,
+      'name'              => array(
+        'type'     => 'varchar',
+        'length'   => 128,
         'not null' => TRUE,
-        'default' => '',
+        'default'  => '',
       ),
-      'admin_title' => array(
-        'type' => 'varchar',
-        'length' => 128,
+      'admin_title'       => array(
+        'type'     => 'varchar',
+        'length'   => 128,
         'not null' => TRUE,
-        'default' => '',
+        'default'  => '',
       ),
       'admin_description' => array(
-        'type' => 'varchar',
-        'length' => 255,
+        'type'     => 'varchar',
+        'length'   => 255,
         'not null' => FALSE,
-        'default' => '',
+        'default'  => '',
       ),
-      'method' => array(
-        'type' => 'varchar',
-        'length' => 128,
+      'method'            => array(
+        'type'     => 'varchar',
+        'length'   => 128,
         'not null' => TRUE,
-        'default' => '',
+        'default'  => '',
       ),
-      'path' => array(
-        'type' => 'varchar',
-        'length' => 128,
+      'path'              => array(
+        'type'     => 'varchar',
+        'length'   => 128,
         'not null' => TRUE,
-        'default' => '',
+        'default'  => '',
       ),
-      'parameters' => array(
-        'type' => 'blob',
+      'parameters'        => array(
+        'type'      => 'blob',
         'serialize' => TRUE,
       ),
-      'results' => array(
-        'type' => 'blob',
+      'results'           => array(
+        'type'      => 'blob',
         'serialize' => TRUE,
       ),
-      'settings' => array(
-        'type' => 'blob',
+      'settings'          => array(
+        'type'      => 'blob',
         'serialize' => TRUE,
       ),
     ),
@@ -130,15 +131,15 @@ function apihub_schema() {
  * Implements hook_field_schema().
  */
 function apihub_field_schema($field) {
-  $schema['columns']['handler'] = array(
+  $schema['columns']['class'] = array(
     'type'     => 'varchar',
     'length'   => 128,
     'not null' => FALSE,
   );
 
   $schema['columns']['settings'] = array(
-    'type' => 'text',
-    'size' => 'big',
+    'type'     => 'text',
+    'size'     => 'big',
     'not null' => TRUE,
   );
 
