@@ -13,7 +13,7 @@ dependencies[] = ctools
 
 ; Files
 
-files[] = apihub.inc
+files[] = classes/apihub_handler.inc
 
 
 
