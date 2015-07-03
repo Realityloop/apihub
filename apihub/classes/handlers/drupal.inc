@@ -59,6 +59,7 @@ class apihubHandlerDrupal extends apihubHandler {
 
     // Debug request object.
     if (isset($options['debug']) && module_exists('devel')) {
+      dpm($url, t('URL'));
       dpm($request, t('Request'));
     }
 

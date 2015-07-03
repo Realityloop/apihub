@@ -40,6 +40,15 @@ class apihubMethod {
   }
 
   /**
+   * @param $key
+   *
+   * @return bool
+   */
+  public function __isset($key) {
+    return isset($this->{$key});
+  }
+
+  /**
    * @return string
    */
   public function getUrl() {
@@ -119,4 +128,18 @@ class apihubMethod {
 
     return $this->handler->execute($this->getUrl(), $this->requestParameters, $this->http_method, $options);
   }
+}
+
+/**
+ * CTools Export field callback function for the API field.
+ *
+ * @param $object
+ * @param $field
+ * @param $value
+ * @param $indent
+ *
+ * @return mixed|string
+ */
+function apihub_method_export_field_api($object, $field, $value, $indent) {
+  return ctools_var_export($value->name, $indent);
 }

@@ -80,10 +80,11 @@ function apihub_schema() {
     ),
     'fields'      => array(
       'api'               => array(
-        'type'     => 'varchar',
-        'length'   => 128,
-        'not null' => TRUE,
-        'default'  => '',
+        'type'            => 'varchar',
+        'length'          => 128,
+        'not null'        => TRUE,
+        'default'         => '',
+        'export callback' => 'apihub_method_export_field_api',
       ),
       'name'              => array(
         'type'     => 'varchar',
@@ -103,7 +104,7 @@ function apihub_schema() {
         'not null' => FALSE,
         'default'  => '',
       ),
-      'http_method'            => array(
+      'http_method'       => array(
         'type'     => 'varchar',
         'length'   => 128,
         'not null' => TRUE,

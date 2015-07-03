@@ -69,11 +69,13 @@ class apihub_methods_ui extends apihub_ui {
     // Add CTools' javascript to the page.
     ctools_modal_add_js();
 
-    if (empty($form_state['values'])) {
-      $item->api = ctools_export_crud_load('apihub_apis', arg(4));
-    }
-    else {
-      $item->api = ctools_export_crud_load('apihub_apis', $form_state['values']['api']);
+    if (!isset($item->api)) {
+      if (empty($form_state['values'])) {
+        $item->api = ctools_export_crud_load('apihub_apis', arg(4));
+      }
+      else {
+        $item->api = ctools_export_crud_load('apihub_apis', $form_state['values']['api']);
+      }
     }
 
     if ($form_state['op'] !== 'edit') {
