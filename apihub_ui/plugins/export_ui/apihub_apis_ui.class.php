@@ -51,5 +51,11 @@ class apihub_apis_ui extends apihub_ui {
       '#type'          => 'textfield',
       '#default_value' => $item->url,
     );
+
+    $form['info']['docs'] = array(
+      '#title'         => t('Documentation URL'),
+      '#type'          => 'textfield',
+      '#default_value' => $item->docs,
+    );
   }
 }

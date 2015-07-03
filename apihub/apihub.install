@@ -20,6 +20,7 @@ function apihub_schema() {
       'primary key'  => 'name',
       'identifier'   => 'api',
       'default hook' => 'apihub_apis',
+      'object'       => 'apihubApi',
       'api'          => array(
         'owner'           => 'apihub',
         'api'             => 'apihub',
@@ -52,18 +53,24 @@ function apihub_schema() {
         'not null' => TRUE,
         'default'  => '',
       ),
+      'docs'              => array(
+        'type'     => 'varchar',
+        'length'   => 128,
+        'not null' => TRUE,
+        'default'  => '',
+      ),
     ),
     'primary key' => array('name'),
   );
 
-  $schema['apihub_resources'] = array(
+  $schema['apihub_methods'] = array(
     'export'      => array(
       'key'          => 'name',
       'key name'     => 'Name',
       'primary key'  => 'name',
-      'identifier'   => 'resource',
-      'default hook' => 'apihub_resources',
-      'object'       => 'apihubResource',
+      'identifier'   => 'method',
+      'default hook' => 'apihub_methods',
+      'object'       => 'apihubMethod',
       'api'          => array(
         'owner'           => 'apihub',
         'api'             => 'apihub',
@@ -96,7 +103,7 @@ function apihub_schema() {
         'not null' => FALSE,
         'default'  => '',
       ),
-      'method'            => array(
+      'http_method'            => array(
         'type'     => 'varchar',
         'length'   => 128,
         'not null' => TRUE,

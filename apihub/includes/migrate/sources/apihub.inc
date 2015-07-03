@@ -1,11 +1,11 @@
 <?php
 /**
  * @file
- * Define a MigrateSource for importing from API Hub resources.
+ * Define a MigrateSource for importing from API Hub methods.
  */
 
 /**
- * Implementation of MigrateSource, to handle imports from API Hub resource.
+ * Implementation of MigrateSource, to handle imports from API Hub method.
  */
 class MigrateSourceAPIHub extends MigrateSource {
   /**
@@ -23,11 +23,11 @@ class MigrateSourceAPIHub extends MigrateSource {
   protected $parameters = array();
 
   /**
-   * API Hub resource.
+   * API Hub method.
    *
    * @var array
    */
-  protected $resource = array();
+  protected $method = array();
 
   /**
    * Query results.
@@ -49,17 +49,17 @@ class MigrateSourceAPIHub extends MigrateSource {
    * @param array $options
    *  Options applied to this source.
    */
-  public function __construct($resource, array $handler = array(), array $parameters = array(), array $options = array()) {
+  public function __construct($method, array $handler = array(), array $parameters = array(), array $options = array()) {
     parent::__construct($options);
 
     ctools_include('export');
-    $this->resource = ctools_export_crud_load('apihub_resources', $resource);
-    if (is_null($this->resource)) {
-      throw new Exception("API Hub resource doesn't exist");
+    $this->method = ctools_export_crud_load('apihub_methods', $method);
+    if (is_null($this->method)) {
+      throw new Exception("API Hub method doesn't exist");
     }
 
-    $this->resource->setParameters($parameters);
-    $this->resource->setHandler($handler);
+    $this->method->setParameters($parameters);
+    $this->method->setHandler($handler);
 
     $this->parameters = $parameters;
   }
@@ -70,7 +70,7 @@ class MigrateSourceAPIHub extends MigrateSource {
    * @return string
    */
   public function __toString() {
-    return $this->resource->getUrl();
+    return $this->method->getUrl();
   }
 
   /**
@@ -83,9 +83,9 @@ class MigrateSourceAPIHub extends MigrateSource {
   public function fields() {
     $fields = array();
 
-    // Get resource root.
+    // Get method root.
     $root = array();
-    foreach ($this->resource->results as $rid => $result) {
+    foreach ($this->method->results as $rid => $result) {
       if (empty($result['pid']) && $result['type'] == 'group') {
         $root[] = $rid;
       }
@@ -94,8 +94,8 @@ class MigrateSourceAPIHub extends MigrateSource {
       $root = $root[0];
     }
 
-    // Build list of resource fields.
-    foreach ($this->resource->results as $result) {
+    // Build list of method fields.
+    foreach ($this->method->results as $result) {
       if ($result['id'] == $root || $result['type'] == 'group') {
         continue;
       }
@@ -103,7 +103,7 @@ class MigrateSourceAPIHub extends MigrateSource {
       $field       = array($result['name']);
       $description = $result['description'];
       while (!empty($result['pid'])) {
-        $result = $this->resource->results[$result['pid']];
+        $result = $this->method->results[$result['pid']];
         if ($result['id'] == $root) {
           break;
         }
@@ -122,28 +122,28 @@ class MigrateSourceAPIHub extends MigrateSource {
     $results = $this->getResults();
 
     // If a pager total count element is defined, return it's value.
-    if (isset($this->resource->settings['apihub']['pager']['total']) && isset($results->{$this->resource->settings['apihub']['pager']['total']})) {
-      return $results->{$this->resource->settings['apihub']['pager']['total']};
+    if (isset($this->method->settings['apihub']['pager']['total']) && isset($results->{$this->method->settings['apihub']['pager']['total']})) {
+      return $results->{$this->method->settings['apihub']['pager']['total']};
     }
 
     // If a root element is defined, adjust the results for the count.
-    if (isset($this->resource->settings['apihub']['root']) && isset($results->{$this->resource->settings['apihub']['root']})) {
-      $results = $results->{$this->resource->settings['apihub']['root']};
+    if (isset($this->method->settings['apihub']['root']) && isset($results->{$this->method->settings['apihub']['root']})) {
+      $results = $results->{$this->method->settings['apihub']['root']};
     }
 
     return count($results);
   }
 
   /**
-   * Return the results of an API Hub resource.
+   * Return the results of an API Hub method.
    */
   public function getResults() {
     if (empty($this->results)) {
       // Process the request.
-      if (isset($this->resource->settings['apihub']['pager']['offset'])) {
-        $this->parameters[$this->resource->settings['apihub']['pager']['offset']] = $this->offset;
+      if (isset($this->method->settings['apihub']['pager']['offset'])) {
+        $this->parameters[$this->method->settings['apihub']['pager']['offset']] = $this->offset;
       }
-      $this->results = $this->resource->execute($this->parameters);
+      $this->results = $this->method->execute($this->parameters);
     }
 
     return $this->results;
@@ -168,8 +168,8 @@ class MigrateSourceAPIHub extends MigrateSource {
     $results =& $this->results;
 
     // If a root element is defined, adjust the results for the count.
-    if (isset($this->resource->settings['apihub']['root']) && isset($this->results->{$this->resource->settings['apihub']['root']})) {
-      $results =& $this->results->{$this->resource->settings['apihub']['root']};
+    if (isset($this->method->settings['apihub']['root']) && isset($this->results->{$this->method->settings['apihub']['root']})) {
+      $results =& $this->results->{$this->method->settings['apihub']['root']};
     }
 
     $row              = $this->iteratorOp == 'current' ? current($results) : next($results);
@@ -177,8 +177,8 @@ class MigrateSourceAPIHub extends MigrateSource {
 
     // If we are out of rows, we are either out of data or we need to page.
     if (!$row) {
-      if (isset($this->resource->settings['apihub']['pager']['offset']) && isset($this->results->{$this->resource->settings['apihub']['pager']['offset']})) {
-        $offset = $this->offset + $this->resource->settings['apihub']['pager']['offset'] + count($results);
+      if (isset($this->method->settings['apihub']['pager']['offset']) && isset($this->results->{$this->method->settings['apihub']['pager']['offset']})) {
+        $offset = $this->offset + $this->method->settings['apihub']['pager']['offset'] + count($results);
 
         if ($offset < $this->computeCount()) {
           $this->offset     = $offset;

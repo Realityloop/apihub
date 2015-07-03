@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Class apihubResource
+ * Class apihubMethod
  */
-class apihubResource {
+class apihubMethod {
   /**
    * @var null
    */
@@ -19,7 +19,7 @@ class apihubResource {
    * @param $value
    */
   public function __set($key, $value) {
-    if ($key == 'api') {
+    if ($key == 'api' && is_string($value)) {
       ctools_include('export');
       $value = ctools_export_crud_load('apihub_apis', $value);
     }
@@ -114,9 +114,9 @@ class apihubResource {
 
     // Ensure that the handler is setup correctly.
     if (!is_object($this->handler)) {
-      throw new Exception('API Hub resource handler is missing.');
+      throw new Exception('API Hub method handler is missing.');
     }
 
-    return $this->handler->execute($this->getUrl(), $this->requestParameters, $this->method, $options);
+    return $this->handler->execute($this->getUrl(), $this->requestParameters, $this->http_method, $options);
   }
 }

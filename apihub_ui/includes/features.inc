@@ -7,18 +7,18 @@
 /**
  * @return array
  */
-function apihub_apihub_resources_list() {
+function apihub_apihub_methods_list() {
   $list = array();
 
   $apis       = ctools_export_crud_load_all('apihub_apis');
-  $items      = ctools_export_crud_load_all('apihub_resources');
-  $schema     = ctools_export_get_schema('apihub_resources');
+  $items      = ctools_export_crud_load_all('apihub_methods');
+  $schema     = ctools_export_get_schema('apihub_methods');
   $export_key = $schema['export']['key'];
   foreach ($items as $item) {
-    $list[$item->$export_key] = check_plain(t('@api: @admin_title (@method @path)', array(
+    $list[$item->$export_key] = check_plain(t('@api: @admin_title (@http_method @path)', array(
       '@api'         => $apis[$item->api]->admin_title,
       '@admin_title' => $item->admin_title,
-      '@method'      => $item->method,
+      '@http_method' => $item->http_method,
       '@path'        => $item->path,
     )));
   }
@@ -31,7 +31,7 @@ function apihub_apihub_resources_list() {
  */
 function apihub_ui_features_pipe_apihub_apis_alter(&$pipe, $data, $export) {
   foreach ($data as $api) {
-    $resources = ctools_export_load_object('apihub_resources', 'conditions', array('api' => $api));
-    $pipe['apihub_resources'] = array_keys($resources);
+    $methods                = ctools_export_load_object('apihub_methods', 'conditions', array('api' => $api));
+    $pipe['apihub_methods'] = array_keys($methods);
   }
 }

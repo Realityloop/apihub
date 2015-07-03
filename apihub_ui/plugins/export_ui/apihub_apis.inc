@@ -13,8 +13,8 @@ function apihub_ui_apihub_apis_ctools_export_ui() {
     'access'                => 'administer apihub',
     'handler'               => 'apihub_apis_ui',
     'allowed operations'    => array(
-      'resources'           => array(
-        'title'             => 'Resources',
+      'methods'           => array(
+        'title'             => 'Methods',
       ),
     ),
 
@@ -25,13 +25,13 @@ function apihub_ui_apihub_apis_ctools_export_ui() {
       'menu title'          => 'APIs',
       'menu description'    => 'Administer 3rd party APIs.',
       'items'               => array(
-        'resources'         => array(
-          'path'            => 'list/%ctools_export_ui/resources',
+        'methods'         => array(
+          'path'            => 'list/%ctools_export_ui/methods',
         ),
       ),
     ),
     'redirect'              => array(
-      'add'                 => 'admin/structure/apihub/%ctools_export_ui/resources',
+      'add'                 => 'admin/structure/apihub/%ctools_export_ui/methods',
     ),
 
     // Strings.

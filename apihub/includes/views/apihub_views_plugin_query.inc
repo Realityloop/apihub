@@ -95,20 +95,21 @@ class apihub_views_plugin_query extends views_plugin_query {
       drupal_set_message(t('API Hub handler has not been configured. Set in !link.', array(
         '!link' => $view->display[$view->current_display]->handler->option_link(t('Query Settings'), 'query'),
       )));
+
       return;
     }
 
-    // Load current resource.
+    // Load current method.
     ctools_include('export');
-    $resource = ctools_export_crud_load('apihub_resources', substr($view->base_table, 7));
+    $method = ctools_export_crud_load('apihub_methods', substr($view->base_table, 7));
 
     // Process the request.
-    $request = new apihubRequest($resource->api, $view->query->options['handler']['handler'], $view->query->options['handler']['settings']);
-    $result  = $request->execute($resource->method, $resource->path, array());
+    $request = new apihubRequest($method->api, $view->query->options['handler']['handler'], $view->query->options['handler']['settings']);
+    $result  = $request->execute($method->http_method, $method->path, array());
 
     // Set root element.
-    if (!empty($resource->settings['apihub']['root'])) {
-      $result = $result->{$resource->settings['apihub']['root']};
+    if (!empty($method->settings['apihub']['root'])) {
+      $result = $result->{$method->settings['apihub']['root']};
     }
 
     foreach ($result as $key => $item) {

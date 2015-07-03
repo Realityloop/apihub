@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Class apihub_resources_ui
+ * Class apihub_methods_ui
  */
-class apihub_resources_ui extends apihub_ui {
+class apihub_methods_ui extends apihub_ui {
 
   /**
    * Builds the operation links for a specific exportable item.
@@ -26,7 +26,7 @@ class apihub_resources_ui extends apihub_ui {
 
     // Clear CTools object cache.
     ctools_include('object-cache');
-    ctools_object_cache_clear('apihub_ui_resources', $item->name);
+    ctools_object_cache_clear('apihub_ui_methods', $item->name);
 
     parent::delete_form_submit($form_state);
   }
@@ -41,7 +41,10 @@ class apihub_resources_ui extends apihub_ui {
 
     $export_key = $this->plugin['export']['key'];
     $item       = $form_state['item'];
-    $schema     = ctools_export_get_schema($this->plugin['schema']);
+    if (empty($item->name)) {
+      $item->name = 'new_' . REQUEST_TIME;
+    }
+    $schema = ctools_export_get_schema($this->plugin['schema']);
 
     // Adjust plugin menu prefix.
     $form_state['plugin']['menu']['menu prefix'] = str_replace('%', $item->api, $form_state['plugin']['menu']['menu prefix']);
@@ -52,12 +55,12 @@ class apihub_resources_ui extends apihub_ui {
     ctools_include('modal');
 
     // Set the object into CTools object cache.
-    $cache = ctools_object_cache_get('apihub_ui_resources', $item->name);
+    $cache = ctools_object_cache_get('apihub_ui_methods', $item->name);
     if ($cache) {
       $item = $cache;
     }
     else {
-      ctools_object_cache_set('apihub_ui_resources', $item->name, $item);
+      ctools_object_cache_set('apihub_ui_methods', $item->name, $item);
     }
 
     // Ensure form is cacheable for custom ajax.
@@ -67,10 +70,10 @@ class apihub_resources_ui extends apihub_ui {
     ctools_modal_add_js();
 
     if (empty($form_state['values'])) {
-      $api = ctools_export_crud_load('apihub_apis', arg(4));
+      $item->api = ctools_export_crud_load('apihub_apis', arg(4));
     }
     else {
-      $api = ctools_export_crud_load('apihub_apis', $form_state['values']['api']);
+      $item->api = ctools_export_crud_load('apihub_apis', $form_state['values']['api']);
     }
 
     if ($form_state['op'] !== 'edit') {
@@ -83,12 +86,12 @@ class apihub_resources_ui extends apihub_ui {
     // Set API name.
     $form['info']['api'] = array(
       '#type'  => 'value',
-      '#value' => $api->name,
+      '#value' => $item->api->name,
     );
 
-    $form['info']['method'] = array(
+    $form['info']['http_method'] = array(
       '#type'          => 'select',
-      '#title'         => t('Method'),
+      '#title'         => t('HTTP method'),
       '#options'       => array(
         'GET'     => 'GET',
         'HEAD'    => 'HEAD',
@@ -100,7 +103,7 @@ class apihub_resources_ui extends apihub_ui {
         'CONNECT' => 'CONNECT',
         'PATCH'   => 'PATCH',
       ),
-      '#default_value' => $item->method,
+      '#default_value' => $item->http_method,
       '#disabled'      => $form_state['op'] === 'edit',
     );
 
@@ -109,7 +112,7 @@ class apihub_resources_ui extends apihub_ui {
       '#title'         => t('Path'),
       '#required'      => TRUE,
       '#default_value' => $item->path,
-      '#field_prefix'  => $api->url,
+      '#field_prefix'  => $item->api->url,
       '#disabled'      => $form_state['op'] === 'edit',
     );
 
@@ -140,9 +143,9 @@ class apihub_resources_ui extends apihub_ui {
     }
 
     $settings = FALSE;
-    foreach (module_implements('apihub_resources_settings') as $module) {
+    foreach (module_implements('apihub_methods_settings') as $module) {
       $settings                  = TRUE;
-      $form['settings'][$module] = module_invoke($module, 'apihub_resources_settings', $item->settings, $item);
+      $form['settings'][$module] = module_invoke($module, 'apihub_methods_settings', $item->settings, $item);
     }
 
     if ($settings) {
@@ -163,7 +166,7 @@ class apihub_resources_ui extends apihub_ui {
       '#type'   => 'fieldset',
       '#title'  => $title,
       '#tree'   => TRUE,
-      '#theme'  => 'apihub_ui_resources_edit_form_fields',
+      '#theme'  => 'apihub_ui_methods_edit_form_fields',
       '#prefix' => "<div id='{$type}-wrapper''>",
       '#suffix' => '</div>',
     );
@@ -202,7 +205,7 @@ class apihub_resources_ui extends apihub_ui {
       $element[$id]['_edit_url'] = array(
         '#type'       => 'hidden',
         '#attributes' => array('class' => array("{$type}-{$id}-edit-button-url")),
-        '#value'      => url("admin/structure/apihub/list/{$item->api}/resources/list/{$item->name}/field/{$type}/{$id}"),
+        '#value'      => url("admin/structure/apihub/list/{$item->api}/methods/list/{$item->name}/field/{$type}/{$id}"),
       );
 
       $element[$id]['_edit'] = array(
@@ -216,7 +219,7 @@ class apihub_resources_ui extends apihub_ui {
     $element['_url'] = array(
       '#type'       => 'hidden',
       '#attributes' => array('class' => array("{$type}-add-button-url")),
-      '#value'      => url("admin/structure/apihub/list/{$item->api}/resources/list/{$item->name}/field/{$type}"),
+      '#value'      => url("admin/structure/apihub/list/{$item->api}/methods/list/{$item->name}/field/{$type}"),
     );
 
     $element['_add'] = array(
@@ -240,7 +243,7 @@ class apihub_resources_ui extends apihub_ui {
       // Sort fields by $_POST order.
       $order                       = array_flip(array_keys($form_state['input'][$type]));
       $form_state['values'][$type] = array_merge($order, $form_state['values'][$type]);
-      $form_state['item']->$type   = array_merge($order, $form_state['item']->$type);
+      $form_state['item']->$type   = is_array($form_state['item']->$type) ? array_merge($order, $form_state['item']->$type) : array();
 
       // Remove fields begining with an underscore ('_').
       foreach (array_keys($form_state['values'][$type]) as $field_id) {
@@ -259,12 +262,12 @@ class apihub_resources_ui extends apihub_ui {
     $export_key = $this->plugin['export']['key'];
     // Build the export key.
     if ($form_state['op'] != 'edit') {
-      $form_state['values'][$export_key] = md5("{$form_state['values']['api']}::{$form_state['values']['method']}::{$form_state['values']['path']}");
+      $form_state['values'][$export_key] = md5("{$form_state['values']['api']}::{$form_state['values']['http_method']}::{$form_state['values']['path']}");
     }
 
     // Clear CTools object cache.
     ctools_include('object-cache');
-    ctools_object_cache_clear('apihub_ui_resources', $form_state['values'][$export_key]);
+    ctools_object_cache_clear('apihub_ui_methods', $form_state['values'][$export_key]);
   }
 
   /**
@@ -278,14 +281,14 @@ class apihub_resources_ui extends apihub_ui {
   function field_page($js, $input, $item, $type, $id) {
     // Fall back if $js is not set.
     if (!$js) {
-      return drupal_get_form('apihub_ui_resources_field_form');
+      return drupal_get_form('apihub_ui_methods_field_form');
     }
 
     ctools_include('ajax');
     ctools_include('modal');
     ctools_include('object-cache');
 
-    $cache = ctools_object_cache_get('apihub_ui_resources', $item->name);
+    $cache = ctools_object_cache_get('apihub_ui_methods', $item);
     if ($cache) {
       $item = $cache;
     }
@@ -303,7 +306,7 @@ class apihub_resources_ui extends apihub_ui {
       'ajax'          => TRUE,
       'form_build_id' => $input['form_build_id'],
     );
-    $output     = ctools_modal_form_wrapper('apihub_ui_resources_field_form', $form_state);
+    $output     = ctools_modal_form_wrapper('apihub_ui_methods_field_form', $form_state);
     if (!empty($form_state['executed'])) {
       $id = substr($type, 0, 1) . count($item->{$type});
 
@@ -331,8 +334,8 @@ class apihub_resources_ui extends apihub_ui {
         }
       }
 
-      // Modify and cache the resource item.
-      ctools_object_cache_set('apihub_ui_resources', $item->name, $item);
+      // Modify and cache the method item.
+      ctools_object_cache_set('apihub_ui_methods', $item->name, $item);
 
       // Regenerate parent form from cache.
       $_POST['form_build_id'] = $input['parent_build_id'];
@@ -366,7 +369,7 @@ class apihub_resources_ui extends apihub_ui {
 
     if (!empty($item)) {
       $title = str_replace('%api', check_plain($item->api->name), $title);
-      $title = str_replace('%method', check_plain($item->method), $title);
+      $title = str_replace('%http_method', check_plain($item->http_method), $title);
       $title = str_replace('%path', check_plain($item->path), $title);
     }
 
@@ -396,9 +399,9 @@ class apihub_resources_ui extends apihub_ui {
     }
 
     $additional_items[] = array(
-      'data'  => $item->method,
+      'data'  => $item->http_method,
       'class' => array(
-        'ctools-export-ui-method',
+        'ctools-export-ui-http_method',
       ),
     );
 
@@ -434,8 +437,8 @@ class apihub_resources_ui extends apihub_ui {
    * unless the listing mechanism is going to be highly specialized.
    */
   function list_page($js, $input) {
-    $admin_title = apihub_resources_ui_api('admin_title');
-    drupal_set_title(t('@admin_title resources', array('@admin_title' => $admin_title)));
+    $admin_title = apihub_methods_ui_api('admin_title');
+    drupal_set_title(t('@admin_title methods', array('@admin_title' => $admin_title)));
 
     return parent::list_page($js, $input);
   }
@@ -516,7 +519,7 @@ class apihub_resources_ui extends apihub_ui {
       'function args' => func_get_args(),
     );
 
-    $output = drupal_build_form('apihub_ui_resources_form_test', $form_state);
+    $output = drupal_build_form('apihub_ui_methods_form_test', $form_state);
     //    if (!empty($form_state['executed'])) {
     //      $this->delete_form_submit($form_state);
     //      $this->redirect($form_state['op'], $item);
@@ -534,7 +537,7 @@ class apihub_resources_ui extends apihub_ui {
  *
  * @return mixed
  */
-function apihub_ui_resources_form_test($form, $form_state) {
+function apihub_ui_methods_form_test($form, $form_state) {
   global $user;
   $item = $form_state['item'];
 
@@ -585,9 +588,9 @@ function apihub_ui_resources_form_test($form, $form_state) {
 
   $form['submit'] = array(
     '#type'  => 'button',
-    '#value' => $item->method,
+    '#value' => $item->http_method,
     '#ajax'  => array(
-      'callback' => 'apihub_ui_resources_form_js_test_output',
+      'callback' => 'apihub_ui_methods_form_js_test_output',
       'wrapper'  => 'test-output-wrapper',
     ),
   );
@@ -603,25 +606,26 @@ function apihub_ui_resources_form_test($form, $form_state) {
  *
  * @return mixed
  */
-function apihub_ui_resources_form_js_test_output($form, $form_state) {
+function apihub_ui_methods_form_js_test_output($form, $form_state) {
   global $user;
 
-  $resource = $form_state['item'];
-  $values   = $form_state['values'];
+  $method = $form_state['item'];
+  $values = $form_state['values'];
 
-  // Store handler settings for this resource's api and current user.
-  $handler_cid = "apihub:{$resource->api->name}:handler:{$user->uid}";
+  // Store handler settings for this methods api and current user.
+  $handler_cid = "apihub:{$method->api->name}:handler:{$user->uid}";
   cache_set($handler_cid, $values['handler'], 'cache_apihub');
 
-  // Store input values for this resource and current user.
-  $input_cid = "apihub:{$resource->api->name}:input:{$resource->name}:{$user->uid}";
+  // Store input values for this method and current user.
+  $input_cid = "apihub:{$method->api->name}:input:{$method->name}:{$user->uid}";
   cache_set($input_cid, $values['input'], 'cache_apihub');
 
   // Clear messages.
   drupal_get_messages();
 
   // Process request.
-  $result = $resource->execute($values['input'], $values['handler'], array('debug' => TRUE));
+  $parameters = is_array($values['input']) ? $values['input'] : array();
+  $result     = $method->execute($parameters, $values['handler'], array('debug' => TRUE));
 
   if (module_exists('devel')) {
     $form['output']['#markup'] = kprint_r($result, TRUE);
@@ -634,13 +638,13 @@ function apihub_ui_resources_form_js_test_output($form, $form_state) {
 }
 
 /**
- * Get resource API or API attribute.
+ * Get method API or API attribute.
  *
  * @param null $attribute
  *
  * @return bool
  */
-function apihub_resources_ui_api($attribute = NULL) {
+function apihub_methods_ui_api($attribute = NULL) {
   $api = ctools_export_crud_load('apihub_apis', arg(4));
 
   if (!is_null($attribute)) {

@@ -20,7 +20,7 @@ foreach (module_list() as $module) {
  * Implements hook_theme().
  */
 function apihub_ui_theme() {
-  $items['apihub_ui_resources_edit_form_fields'] = array(
+  $items['apihub_ui_methods_edit_form_fields'] = array(
     'render element' => 'element',
   );
 
@@ -31,7 +31,7 @@ function apihub_ui_theme() {
  * Implements hook_hook_info().
  */
 function apihub_ui_hook_info() {
-  $hooks['apihub_resources_settings'] = array(
+  $hooks['apihub_methods_settings'] = array(
     'group' => 'apihub',
   );
 
@@ -53,7 +53,7 @@ function apihub_ui_ctools_plugin_directory($module, $plugin) {
  *
  * @return mixed
  */
-function apihub_ui_resources_field_form($form, $form_state) {
+function apihub_ui_methods_field_form($form, $form_state) {
   $id       = arg(7);
   $type     = arg(9);
   $field_id = arg(10);
@@ -62,7 +62,7 @@ function apihub_ui_resources_field_form($form, $form_state) {
   // If field ID is provided, get the current values of said field.
   if (!is_null($field_id)) {
     ctools_include('object-cache');
-    $cache = ctools_object_cache_get('apihub_ui_resources', $id);
+    $cache = ctools_object_cache_get('apihub_ui_methods', $id);
     if ($cache) {
       $item = $cache;
     }
@@ -177,7 +177,7 @@ function apihub_ui_resources_field_form($form, $form_state) {
  *
  * @TODO - This
  */
-function apihub_ui_resources_field_exists() {
+function apihub_ui_methods_field_exists() {
   return FALSE;
 }
 
@@ -186,7 +186,7 @@ function apihub_ui_resources_field_exists() {
  *
  * @return string
  */
-function theme_apihub_ui_resources_edit_form_fields($variables) {
+function theme_apihub_ui_methods_edit_form_fields($variables) {
   $element = $variables['element'];
   $type    = drupal_substr($element['#id'], 5);
 

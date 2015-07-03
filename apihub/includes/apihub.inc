@@ -14,11 +14,11 @@ function apihub_apihub_handler_info() {
 /**
  * Implement hook_apihub_pre_execute().
  */
-function apihub_apihub_pre_execute($resource, $apihub) {
+function apihub_apihub_pre_execute($method, $apihub) {
   // @TODO - Also check if the whole API is offline.
-  if (isset($resource->settings['apihub']['offline']) && $resource->settings['apihub']['offline']) {
-    drupal_set_message(t('Resource "@resource" is in offline mode.', array(
-      '@resource' => $resource->admin_title,
+  if (isset($method->settings['apihub']['offline']) && $method->settings['apihub']['offline']) {
+    drupal_set_message(t('Method "@method" is in offline mode.', array(
+      '@method' => $method->admin_title,
     )), 'status', FALSE);
 
     $apihub->setHandler(new offline_apihub_handler());
@@ -33,23 +33,23 @@ function apihub_apihub_pre_execute($resource, $apihub) {
 //   * @param       $method
 //   * @param       $url
 //   * @param array $params
-//   * @param       $resource
+//   * @param       $method
 //   *
 //   * @return array
 //   */
-//  function execute($method, $url, $params = array(), $resource) {
+//  function execute($method, $url, $params = array(), $method) {
 //    $data = array();
 //    $map  = array();
 //
-//    foreach ($resource->results as $rid => $result) {
+//    foreach ($method->results as $rid => $result) {
 //      $map[$rid] = &$data;
 //      if (!empty($result['pid'])) {
 //        $parent = $result['pid'];
 //        while ($parent) {
 //          $map[$rid] = &$map[$parent];
 //
-//          if (!empty($resource->results[$parent]['pid'])) {
-//            $parent = $resource->results[$parent]['pid'];
+//          if (!empty($method->results[$parent]['pid'])) {
+//            $parent = $method->results[$parent]['pid'];
 //          }
 //          else {
 //            unset($parent);

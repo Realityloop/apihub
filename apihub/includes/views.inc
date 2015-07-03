@@ -46,29 +46,29 @@ function apihub_views_data() {
   $apis = ctools_export_crud_load_all('apihub_apis');
   foreach ($apis as $api) {
     if (!isset($api->disabled) || !$api->disabled) {
-      $resources = ctools_export_load_object('apihub_resources', 'conditions', array('api' => $api->name));
+      $methods = ctools_export_load_object('apihub_methods', 'conditions', array('api' => $api->name));
 
-      foreach ($resources as $resource) {
-        if (strtoupper($resource->method) == 'GET' && isset($resource->settings['views']) && $resource->settings['views']['enabled']) {
-          $data["apihub_{$resource->name}"]['table']['group'] = t('API Hub - @api', array('@api' => $api->admin_title));
-          $data["apihub_{$resource->name}"]['table']['base']  = array(
+      foreach ($methods as $method) {
+        if (strtoupper($method->http_method) == 'GET' && isset($method->settings['views']) && $method->settings['views']['enabled']) {
+          $data["apihub_{$method->name}"]['table']['group'] = t('API Hub - @api', array('@api' => $api->admin_title));
+          $data["apihub_{$method->name}"]['table']['base']  = array(
             'title'       => t('API Hub - @api: @admin_title', array(
               '@api'         => $api->admin_title,
-              '@admin_title' => $resource->admin_title,
+              '@admin_title' => $method->admin_title,
             )),
             'help'        => t(''),
             'query class' => 'apihub_views_plugin_query',
           );
 
-          foreach ($resource->results as $rid => $result) {
-            $data["apihub_{$resource->name}"][$result['name']] = array(
+          foreach ($method->results as $rid => $result) {
+            $data["apihub_{$method->name}"][$result['name']] = array(
               'title'       => $result['name'],
               'description' => $result['description'],
             );
 
             // Field.
             if (isset($handlers['field'][$result['type']])) {
-              $data["apihub_{$resource->name}"][$result['name']]['field'] = array(
+              $data["apihub_{$method->name}"][$result['name']]['field'] = array(
                 'handler'     => $handlers['field'][$result['type']],
                 'description' => $result['description'],
               );

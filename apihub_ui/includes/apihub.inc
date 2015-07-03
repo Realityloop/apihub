@@ -5,9 +5,9 @@
  */
 
 /**
- * Implements hook_apihub_resources_settings() on behalf of apihub.module.
+ * Implements hook_apihub_methods_settings() on behalf of apihub.module.
  */
-function apihub_apihub_resources_settings($settings = array(), $item) {
+function apihub_apihub_methods_settings($settings = array(), $item) {
   $form = array();
 
   $form['root'] = array(
@@ -39,7 +39,7 @@ function apihub_apihub_resources_settings($settings = array(), $item) {
   $form['offline'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Offline mode'),
-    '#description'   => t('Puts the current resource into offline mode.'),
+    '#description'   => t('Puts the current method into offline mode.'),
     '#default_value' => isset($settings['apihub']['offline']) ? $settings['apihub']['offline'] : 0,
   );
 
