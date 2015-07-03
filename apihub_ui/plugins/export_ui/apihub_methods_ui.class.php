@@ -365,12 +365,17 @@ class apihub_methods_ui extends apihub_ui {
    * Get a page title for the current page from our plugin strings.
    */
   function get_page_title($op, $item = NULL) {
-    $title = parent::get_page_title($op, $item);
+    if (empty($this->plugin['strings']['title'][$op])) {
+      return;
+    }
 
+    // Replace %title that might be there with the exportable title.
+    $title = $this->plugin['strings']['title'][$op];
     if (!empty($item)) {
-      $title = str_replace('%api', check_plain($item->api->name), $title);
-      $title = str_replace('%http_method', check_plain($item->http_method), $title);
-      $title = str_replace('%path', check_plain($item->path), $title);
+      $title = (str_replace('%title', check_plain($item->admin_title), $title));
+      $title = (str_replace('%api', check_plain($item->api->name), $title));
+      $title = (str_replace('%http_method', check_plain($item->http_method), $title));
+      $title = (str_replace('%path', check_plain($item->path), $title));
     }
 
     return $title;
@@ -492,6 +497,25 @@ class apihub_methods_ui extends apihub_ui {
     }
 
     parent::redirect($op, $item);
+  }
+
+  /**
+   * Called to save the final product from the edit form.
+   */
+  function edit_save_form($form_state) {
+    $item       = &$form_state['item'];
+    $export_key = $this->plugin['export']['key'];
+
+    $result = ctools_export_crud_save($this->plugin['schema'], $item);
+
+    if ($result) {
+      $message = str_replace('%title', check_plain($item->http_method . ' ' . $item->admin_title), $this->plugin['strings']['confirmation'][$form_state['op']]['success']);
+      drupal_set_message($message);
+    }
+    else {
+      $message = str_replace('%title', check_plain($item->http_method . ' ' . $item->admin_title), $this->plugin['strings']['confirmation'][$form_state['op']]['fail']);
+      drupal_set_message($message, 'error');
+    }
   }
 
   /**

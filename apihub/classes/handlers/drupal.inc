@@ -49,10 +49,10 @@ class apihubHandlerDrupal extends apihubHandler {
    */
   public function execute($url, array $parameters = array(), $method = 'GET', array $options = array()) {
     if (!empty($this->auth)) {
-      $paramaters = array_merge($parameters, drupal_get_query_array($this->auth));
+      $parameters = array_merge($parameters, drupal_get_query_array($this->auth));
     }
 
-    $url     = url($url, array('query' => $paramaters));
+    $url     = url($url, array('query' => $parameters));
     $request = drupal_http_request($url, array(
       'method' => $method,
     ));

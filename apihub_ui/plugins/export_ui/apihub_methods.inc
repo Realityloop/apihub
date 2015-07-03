@@ -67,8 +67,8 @@ function apihub_ui_apihub_methods_ctools_export_ui() {
         ),
       ),
       'title'                => array(
-        'edit'               => t('Edit %api method %method %path'),
-        'test'               => t('Test %api method %method %path'),
+        'edit'               => t('Edit %api method %http_method %path'),
+        'test'               => t('Test %api method %http_method %path'),
       ),
     ),
     'title singular'         => t('method'),
