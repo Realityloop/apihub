@@ -16,7 +16,7 @@ function apihub_apihub_methods_list() {
   $export_key = $schema['export']['key'];
   foreach ($items as $item) {
     $list[$item->$export_key] = check_plain(t('@api: @admin_title (@http_method @path)', array(
-      '@api'         => $apis[$item->api]->admin_title,
+      '@api'         => $item->api->admin_title,
       '@admin_title' => $item->admin_title,
       '@http_method' => $item->http_method,
       '@path'        => $item->path,
