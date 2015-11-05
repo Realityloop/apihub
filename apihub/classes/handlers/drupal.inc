@@ -52,7 +52,7 @@ class apihubHandlerDrupal extends apihubHandler {
       $parameters = array_merge($parameters, drupal_get_query_array($this->auth));
     }
 
-    $url     = url($url, array('query' => $parameters));
+    $url = url($url, array('query' => $parameters));
     $request = drupal_http_request($url, array(
       'method' => $method,
     ));
@@ -64,21 +64,24 @@ class apihubHandlerDrupal extends apihubHandler {
     }
 
     // Standardise data.
-    $data = $request->data;
-    switch (TRUE) {
-      case strstr($request->headers['content-type'], 'json'):
-        $data = json_decode($data);
-        break;
+    if (isset($request->data)) {
+      $data = $request->data;
+      switch (TRUE) {
+        case strstr($request->headers['content-type'], 'json'):
+          $data = json_decode($data);
+          break;
 
-      case strstr($request->headers['content-type'], 'xml'):
-        // @TODO - Standardise @attributes?.
-        $xml  = simplexml_load_string($data);
-        $json = json_encode($xml);
-        $data = json_decode($json, TRUE);
-        break;
+        case strstr($request->headers['content-type'], 'xml'):
+          // @TODO - Standardise @attributes?.
+          $xml = simplexml_load_string($data);
+          $json = json_encode($xml);
+          $data = json_decode($json, TRUE);
+          break;
+      }
+
+      return $data;
     }
-
-    return $data;
+    return FALSE;
   }
 
   /**

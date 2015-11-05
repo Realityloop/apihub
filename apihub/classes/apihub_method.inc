@@ -109,7 +109,10 @@ class apihubMethod {
 
   /**
    * @param array $parameters
+   * @param array $handler
    * @param array $options
+   * @return mixed
+   * @throws \Exception
    */
   public function execute(array $parameters = array(), array $handler = array(), array $options = array()) {
     if (!empty($parameters)) {
@@ -118,7 +121,7 @@ class apihubMethod {
 
     // Setup the handler.
     if (!empty($handler)) {
-      $this->setHandler($handler, $parameters);
+      $this->setHandler($handler);
     }
 
     // Ensure that the handler is setup correctly.

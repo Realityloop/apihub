@@ -43,9 +43,10 @@ function apihub_handlers($reset = FALSE) {
  * @return mixed|bool
  */
 function apihub_handlers_load($handler) {
-  $handlers = apihub_handlers();
-
-  return isset($handlers[$handler]) ? $handlers[$handler] : FALSE;
+  if (class_exists($handler)) {
+    return new $handler();
+  }
+  return FALSE;
 }
 
 /**

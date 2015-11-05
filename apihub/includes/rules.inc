@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Rules module integration.
@@ -10,96 +11,90 @@
 function apihub_rules_action_info() {
   $actions = array();
 
-    // Add actions from API Hub handlers.
-    $handlers = apihub_handlers();
-    foreach ($handlers as $class => $name) {
-      if (class_exists($class)) {
-        $id = "apihub_handler_{$class}";
+  // Add actions from API Hub handlers.
+  $handlers = apihub_handlers();
+  foreach ($handlers as $class => $name) {
+    if (class_exists($class)) {
+      $id = "apihub_handler_{$class}";
 
-        $actions[$id] = array(
-          'label'    => t('Create API Hub "@name" handler', array('@name' => $name)),
-          'group'    => t('API Hub - Handlers'),
-          'base'     => 'apihub_rules_handlers_action',
-          'provides' => array(
+      $actions[$id] = array(
+        'label'    => t('Create API Hub "@name" handler', array('@name' => $name)),
+        'group'    => t('API Hub - Handlers'),
+        'base'     => 'apihub_rules_handlers_action',
+        'provides' => array(
+          'handler' => array(
+            'label' => t('@name handler', array('@name' => $name)),
+            'type'  => 'apihub_handler',
+          ),
+        ),
+      );
+
+      $handler = new $class();
+      if (method_exists($handler, 'settingsForm')) {
+        $actions[$id]['parameter'] = array();
+        foreach ($handler->settingsForm() as $setting => $element) {
+          $actions[$id]['parameter'][$setting] = _apihub_field_to_rules($element);
+        }
+      }
+    }
+  }
+
+  // Add actions from API Hub method.
+  ctools_include('export');
+  $apis = ctools_export_crud_load_all('apihub_apis');
+  foreach ($apis as $api) {
+    if (!isset($api->disabled) || !$api->disabled) {
+      $methods = ctools_export_load_object('apihub_methods', 'conditions', array('api' => $api->name));
+
+      foreach ($methods as $method) {
+        $action_id = "apihub_action_{$method->name}";
+
+        $actions[$action_id] = array(
+          'label'     => t('@label (@http_method @path)', array(
+            '@label'       => $method->admin_title,
+            '@http_method' => $method->http_method,
+            '@path'        => $method->path,
+          )),
+          'parameter' => array(
             'handler' => array(
-              'label' => t('@name handler', array('@name' => $name)),
+              'label' => t('Handler'),
               'type'  => 'apihub_handler',
             ),
           ),
+          'provides'  => array(
+            'result' => array(
+              'label' => t('Result'),
+              'type'  => "apihub_data_{$method->name}",
+            ),
+          ),
+          'group'     => t('API Hub - Methods - @api', array('@api' => $method->api->admin_title)),
+          'base'      => 'apihub_rules_methods_action',
         );
 
-        $handler = new $class();
-        if (method_exists($handler, 'settingsForm')) {
-          $actions[$id]['parameter'] = array();
-          foreach ($handler->settingsForm() as $setting => $element) {
-            $actions[$id]['parameter'][$setting] = _apihub_field_to_rules($element);
+        // Parameters.
+        if (!empty($method->parameters)) {
+          foreach ($method->parameters as $parameter) {
+            $actions[$action_id]['parameter'][$parameter['name']] = _apihub_field_to_rules($parameter);
+            if (!empty($parameter['options'])) {
+              $actions[$action_id]['parameter'][$parameter['id']]['options list'] = 'apihub_rules_methods_parameter_options';
+            }
           }
+        }
+
+        // Provides - <list>.
+        // @TODO - Deal with 'root' settings here as well?
+        $root = array();
+        foreach ($method->results as $rid => $result) {
+          if (empty($result['pid'])) {
+            $root[] = $rid;
+          }
+        }
+        if (count($root) == 1 && $method->results[$root[0]]['type'] == 'group') {
+          $actions[$action_id]['provides']['result']['type'] = "list<apihub_data_{$method->name}>";
         }
       }
     }
-
-    // Add actions from API Hub method.
-    ctools_include('export');
-    $apis = ctools_export_crud_load_all('apihub_apis');
-    foreach ($apis as $api) {
-      if (!isset($api->disabled) || !$api->disabled) {
-        $methods = ctools_export_load_object('apihub_methods', 'conditions', array('api' => $api->name));
-
-        foreach ($methods as $method) {
-          $action_id = "apihub_action_{$method->name}";
-
-          $actions[$action_id] = array(
-            'label'     => t('@label (@http_method @path)', array(
-              '@label'  => $method->admin_title,
-              '@http_method' => $method->http_method,
-              '@path'   => $method->path,
-            )),
-            'parameter' => array(
-              'handler' => array(
-                'label' => t('Handler'),
-                'type'  => 'apihub_handler',
-              ),
-            ),
-            'provides'  => array(
-              'result' => array(
-                'label' => t('Result'),
-                'type'  => "apihub_data_{$method->name}",
-              ),
-            ),
-            'group'     => t('API Hub - Methods - @api', array('@api' => $method->api->admin_title)),
-            'base'      => 'apihub_rules_methods_action',
-          );
-
-          // Parameters.
-          if (!empty($method->parameters)) {
-            foreach ($method->parameters as $parameter) {
-              $actions[$action_id]['parameter'][$parameter['name']] = array(
-                'label'         => $parameter['name'],
-                'description'   => $parameter['description'],
-                'type'          => 'text',
-                'default value' => '',
-                'optional'      => !$parameter['required'],
-              );
-              if (!empty($parameter['options'])) {
-                $actions[$action_id]['parameter'][$parameter['id']]['options list'] = 'apihub_rules_methods_parameter_options';
-              }
-            }
-          }
-
-          // Provides - <list>.
-          // @TODO - Deal with 'root' settings here as well?
-          $root = array();
-          foreach ($method->results as $rid => $result) {
-            if (empty($result['pid'])) {
-              $root[] = $rid;
-            }
-          }
-          if (count($root) == 1 && $method->results[$root[0]]['type'] == 'group') {
-            $actions[$action_id]['provides']['result']['type'] = "list<apihub_data_{$method->name}>";
-          }
-        }
-      }
-    }
+  }
 
   return $actions;
 }
@@ -205,7 +200,7 @@ function apihub_rules_data_info() {
                 'property info' => array(),
                 'type'          => 'list',
               );
-              $map[$rid]       = &$map[$rid][$key]['property info'];
+              $map[$rid] = &$map[$rid][$key]['property info'];
               break;
 
             default:
@@ -214,7 +209,7 @@ function apihub_rules_data_info() {
                 'id'    => $key,
                 'type'  => $result['type'],
               );
-              $map[$rid]       = &$map[$rid][$key];
+              $map[$rid] = &$map[$rid][$key];
               break;
           }
         }
@@ -242,6 +237,7 @@ function _apihub_field_to_rules($field) {
 
   // @TODO - Make this extensible.
   $types = array(
+    'boolean' => 'boolean',
     'decimal' => 'decimal',
     'text'    => 'text',
     'user'    => 'user',
@@ -270,23 +266,22 @@ function apihub_rules_handlers_action() {
   $args = func_get_args();
 
   $element = $args[count($args) - 2];
-  $handler = apihub_handlers_load(substr($element->getElementName(), 15));
-
+  $class = substr($element->getElementName(), 15);
+  $handler = apihub_handlers_load($class);
+  $settings = array();
   if ($handler) {
-    $return = array(
-      'handler'  => $handler['id'],
-      'settings' => array(),
-    );
-
     // @TODO - Add some conditional checks to ensure valid settings.
-    if (isset($handler['settings']) && is_array($handler['settings'])) {
-      foreach (array_keys($handler['settings']) as $setting) {
-        $return['settings'][$setting] = array_shift($args);
+    if (method_exists($handler, 'settingsForm')) {
+      foreach ($handler->settingsForm() as $setting => $element) {
+        $settings[$setting] = array_shift($args);
       }
     }
 
     return array(
-      'handler' => $return,
+      'handler' => array(
+        'class'    => $class,
+        'settings' => $settings,
+      ),
     );
   }
 
@@ -320,14 +315,16 @@ function apihub_rules_methods_parameter_options($element, $name) {
 /**
  *
  */
-function apihub_rules_method_action() {
+function apihub_rules_methods_action() {
   $args = func_get_args();
 
   // Load provided API Hub method.
+  /** @var RulesAction $element */
   $element = $args[count($args) - 2];
-  ctools_include('export');
-  $method = ctools_export_crud_load('apihub_method', substr($element->getElementName(), 14));
 
+  ctools_include('export');
+  /** @var apihubMethod $method */
+  $method = ctools_export_crud_load('apihub_methods', substr($element->getElementName(), 14));
   if ($method) {
     $handler = array_shift($args);
 
@@ -340,8 +337,7 @@ function apihub_rules_method_action() {
     }
 
     // Process the request.
-    $request = new apihubRequest($method->api, $handler['handler'], $handler['settings']);
-    $result  = $request->execute($method->http_method, $method->path, $parameters);
+    $result = $method->execute($parameters, $handler);
 
     // Return resulting data.
     $return = array(
